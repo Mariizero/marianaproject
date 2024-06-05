@@ -7,3 +7,13 @@ simulated_ecg = nk.ecg_simulate(duration:=8, sampling_rate:=200, method="daubech
 
 plt.plot(simulated_ecg)
 plt.show()
+
+## List ##
+
+main_list = []
+sub_list= simulated_ecg
+main_list.append(sub_list)
+print(main_list)
+#print(main_list[0])
+
+## Create a Excel ##
