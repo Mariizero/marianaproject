@@ -3,13 +3,15 @@
 import neurokit2 as nk  # Load the package
 import matplotlib.pyplot as plt
 import openpyxl
-import pandas as pd
 import numpy as np
 
-simulated_ecg = nk.ecg_simulate(duration:=8, sampling_rate:=200, method="daubechies")
+
+# Generate 60 seconds of ECG signal (recorded at 500 samples/second)
+simulated_ecg = nk.ecg_simulate(duration:=60, sampling_rate:=500, heart_rate:=70) #method="daubechies"
 
 ## Monta grafico ##
-plt.plot(simulated_ecg)
+
+plt.plot(simulated_ecg )
 plt.show()
 
 ## Converter Array ##
@@ -27,4 +29,4 @@ for row in data:
     sheet.append(row)
 
 workbook.save("test_ECG_One.xlsx")
-print("Excel file created")
+print("Excel file created :)")
