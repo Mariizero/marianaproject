@@ -4,26 +4,25 @@ import neurokit2 as nk  # Load the package
 import matplotlib.pyplot as plt
 import openpyxl
 import pandas as pd
+import numpy as np
 
-#simulated_ecg = nk.ecg_simulate(duration:=8, sampling_rate:=200, method="daubechies")
-simulated_ecg = 1
+simulated_ecg = nk.ecg_simulate(duration:=8, sampling_rate:=200, method="daubechies")
 
+## Monta grafico ##
 plt.plot(simulated_ecg)
 plt.show()
 
-## List ##
+## Converter Array ##
 
-main_list = []
-sub_list= simulated_ecg
-main_list.append(sub_list)
-print(main_list)
-#print(main_list[0])
+a = np.array(simulated_ecg)
+b = a.tolist() #Uma linha em lista
+
 
 ## Create a Excel ##
 
 workbook = openpyxl.Workbook()
 sheet = workbook.active
-data = [main_list]
+data = [b]
 for row in data:
     sheet.append(row)
 
