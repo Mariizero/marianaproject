@@ -4,6 +4,16 @@ import neurokit2 as nk  # Load the package
 import matplotlib.pyplot as plt
 import openpyxl
 import numpy as np
+import wfdb
+import os
+import csv
+from tabulate import tabulate
+
+import pandas as pd
+import plotly.graph_objs as go
+
+from plotly.subplots import make_subplots
+from scipy.stats import iqr
 
 
 # Generate 60 seconds of ECG signal (recorded at 500 samples/second) for human
@@ -11,25 +21,29 @@ import numpy as np
 
 #Generate for rats
 
+simulated_ecg = []
 simulated_ecg = nk.ecg_simulate(duration:=60, sampling_rate:=500, frequency:=50)
+simulated_ecg = np.array(simulated_ecg, dtype:="object") ## Converter Array ##
 
-#FALTA VER A DISTANCIA ENTRE OS R, ENTAO POSSO COLOCAR ALGUMAS MARCACOES
+
+
+
+b = simulated_ecg.tolist() #Uma linha em lista
+print(b)
+
 
 ## Monta grafico ##
 
 plt.plot(simulated_ecg)
 plt.show()
 
-## Converter Array ##
 
-a = np.array(simulated_ecg)
-b = a.tolist() #Uma linha em lista
 
 ## Create a Excel ##
 
 workbook = openpyxl.Workbook()
 sheet = workbook.active
-data = [b]
+data = [b] #TROCAR AQUI DEPOIS
 for row in data:
     sheet.append(row)
 
