@@ -132,3 +132,14 @@ class ECG(App):  #Determina o nome do aplicativo
 
 if __name__ == "__main__":
     ECG().run()
+
+
+
+
+#
+#
+#
+#Artigos para ver depois
+#https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5822908/
+#https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5351223/
+#
