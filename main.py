@@ -142,4 +142,4 @@ if __name__ == "__main__":
 #Artigos para ver depois
 #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5822908/
 #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5351223/
-#
+#COMPUTER METHODS AND PROGRAMS IN BIOMEDICINE (PRINT) 0169-2607
