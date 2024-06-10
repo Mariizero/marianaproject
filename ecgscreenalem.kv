@@ -1,0 +1,96 @@
+WindowManager:
+    MainWindow:
+
+<MainWindow>:
+    name: "main"
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        cols:1
+        size_hint: 1, 1
+        
+
+        FloatLayout:
+            pos_hint: {"top":1, "x":0}
+            size_hint: 1,0.11     #determina o tamanho do Layout, nao a posição
+
+            Button:
+                id: ConeArd
+                text: " "
+                size_hint: 0.12,0.8
+                pos_hint: {"center_y":0.5, "x":0.01}
+                font_size: 20
+                background_color: 46/255, 160/255, 81/255, 1
+                background_normal: ''
+                disabled: False
+                image_source: "Selectfile.png"
+
+                on_release:
+                    #root.ConectarArd()
+
+                Image:
+                    source: ConeArd.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    allow_stretch: True
+                    color: [1,1,1,0.1] if ConeArd.disabled == True else [1,1,1,1] if ConeArd.state == "normal" else [0.5,0.5,0.5,1]
+
+            
+            Label:
+                id: IsCon
+                text: "Select File"
+                pos_hint: {"top":0.9, "x":0.5}
+                size_hint: 0.5,0.5
+                font_size: 25
+                background_color: 225/255, 180/255, 193/255, 1
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                color: 0,0,0,1
+                bold: True
+                italic: False
+
+        
+        FloatLayout:
+            cols:1
+            size_hint: 1, 1
+            
+
+            BoxLayout:
+                id: ArdBox 
+                pos_hint: {"top":0.84, "x":0.05}
+                size_hint: 0.9,0.83
+                background_color: 225/255, 180/255, 193/255, 1
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                color: 0,0,0,1
+                bold: True
+                italic: False
+
+
+
+        
+        
+
+               
+
+        
+
+            
+                  
+
+             
+
+                

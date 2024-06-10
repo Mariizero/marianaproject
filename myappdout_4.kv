@@ -1,0 +1,986 @@
+#: import Factory kivy.factory.Factory
+
+WindowManager:
+    MainWindow:
+    SecondWindow:
+   
+
+<MainWindow>:
+    name: "main"
+    canvas.before:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        cols:1
+        size_hint: 1,1
+        pos_hint: {"center_y":0.5, "center_x":0.5}
+
+        FloatLayout:
+            pos_hint: {"top":1, "x":0}
+            size_hint: 1,0.11    
+
+
+            Button:  
+                id: ConeArd
+                text: "Connect"
+                size_hint: 0.12,0.8
+                pos_hint: {"center_y":0.5, "x":0.01}
+                font_size: 20
+                background_color: 46/255, 160/255, 81/255, 0
+                background_normal: ''
+                disabled: False
+                image_source: "Arduinoappon.png" if root.source == 1 else "ArduinoapponBr.png"
+
+                on_release:
+                    root.ConectarArd()
+                    ConeArd.disabled = True
+                    DescArd.disabled = False
+                    user1.disabled = False
+                    sub.disabled = False
+
+                Image:
+                    source: ConeArd.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    allow_stretch: True
+                    color: [1,1,1,0.1] if ConeArd.disabled == True else [1,1,1,1] if ConeArd.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Button:
+                id: DescArd
+                text: "Disct"
+                size_hint: 0.12,0.8
+                pos_hint: {"center_y":0.5, "x":0.15}
+                font_size: 20
+                background_color: 193/255, 62/255, 65/255, 0
+                background_normal: ''
+                disabled: True
+                image_source: "Arduinoappoff.png" if root.source == 1 else "ArduinoappoffBr.png"
+
+                on_release:
+                    root.DesconectarArd()
+                    ConeArd.disabled = False
+                    DescArd.disabled = True
+                    user1.disabled = True
+                    sub.disabled = True
+                    
+
+                Image:
+                    source: DescArd.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    allow_stretch: True
+                    color: [1,1,1,0.1] if DescArd.disabled == True else [1,1,1,1] if DescArd.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Label:
+                id: IsCon
+                text: "  " 
+                size_hint: 0.1,0.5
+                pos_hint: {"center_y":0.5, "x":0.29}
+                font_size: 15
+                background_color: 1, 1, 1, 1
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0,0,0,1
+                bold: True
+                italic: False
+                #outline_color: 0,0,0,0
+                #outline_width: 5
+
+
+#---------- LOGO APP ----------
+
+        FloatLayout:
+            size_hint: (0.35, 0.20)
+            pos_hint: {"x":0.57,"top":1}
+
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                    source: "LogoAPPD.png"
+
+#------- Login -------------
+
+        FloatLayout:
+            pos_hint: {"top":0.8, "x":0}
+            size_hint: 0.9,0.47
+            
+            Label:
+                id: CordeFundo
+                text: " "
+                pos_hint: {"top":1, "x":0.05}
+                size_hint: 1,1
+                font_size: 30
+                font_name: 'Comic'
+                background_color: 220/255, 229/255, 230/255, 1
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                # Text Properties
+                color: 0,0,0,1
+                bold: False
+                italic: False
+
+            Label:
+                id: Sample
+                text: "Sample" if root.text == 1 else "Amostra"
+                pos_hint: {"top":0.8, "x":0.14}
+                size_hint: 0.2,0.2
+                font_size: 32
+                font_name: 'Comic'
+                background_color: 0, 0, 0, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                # Text Properties
+                color: 0,0,0,1
+                bold: False
+                italic: False
+
+
+            TextInput:
+                id: user1
+                font_size: 28
+                font_name: 'Comic'
+                text: " "
+                multiline: False
+                disabled: False
+                pos_hint: {"top":0.8, "x":0.35}
+                size_hint: 0.6,0.2
+
+
+            Button:
+                id: sub                
+                text: " "
+                font_size: 22
+                size_hint: 0.1,0.15
+                disabled: False
+                pos_hint: {"center_y":0.30, "center_x":0.545}
+                background_color: 46/255, 148/255, 160/255, 0
+                background_normal: ''
+                on_release:
+                    root.CriarPast()
+                    app.root.current = "second"
+                
+             
+                Image:
+                    source: 'subbuton.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (95,65)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,0.1] if sub.disabled == True else [1,1,1,1] if sub.state == "normal" else [0.5,0.5,0.5,1]
+
+            
+
+#----------- Tradução --------------
+
+        FloatLayout:
+            pos_hint: {"top":0.17, "x":0}
+            size_hint: 0.25,0.17
+            
+            
+            Button:
+                text: "In"
+                id: Conf
+                font_size: 22
+                size_hint: 0.2,0.35
+                pos_hint: {"top":0.4, "x":0.1}
+                background_color: 46/255, 148/255, 160/255, 0
+                background_normal: ''
+                on_release:
+                    root.Registrar2()
+                    
+                    Sample.text = "Sample" if root.text == 1 else "Amostra"
+                    DescArd.image_source = "Arduinoappoff.png" if root.source == 1 else "ArduinoappoffBr.png"
+                    ConeArd.image_source = "Arduinoappon.png" if root.source == 1 else "ArduinoapponBr.png"
+                    
+
+                Image:
+                    source: 'iconBR.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (50,35)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,0.8] if Conf.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Button:
+                text: "Atua"
+                id: atualizar
+                font_size: 22
+                size_hint: 0.2,0.35
+                pos_hint: {"top":0.4, "x":0.38}
+                background_color: 46/255, 148/255, 160/255, 0
+                background_normal: ''
+                on_release:
+                    root.Registrar3()
+                    
+                    Sample.text = "Sample" if root.text == 1 else "Amostra"
+                    DescArd.image_source = "Arduinoappoff.png" if root.source == 1 else "ArduinoappoffBr.png"
+                    ConeArd.image_source = "Arduinoappon.png" if root.source == 1 else "ArduinoapponBr.png"
+                    
+
+                Image:
+                    source: 'iconUSA.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (50,35)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,0.8] if atualizar.state == "normal" else [0.5,0.5,0.5,1]
+
+            
+#--------Imagens UMC NPT LAVITA------
+        FloatLayout:
+            pos_hint: {"top":0.17, "x":0.74}
+            size_hint: 0.25,0.17
+
+
+            
+            FloatLayout:
+                size_hint: (0.5, 0.5)
+                pos_hint: {"x":0.5,"center_y":0.75}
+
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.3
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                        source: "Imagensapp\Logo_NPT2.jpg"
+
+            FloatLayout:
+                size_hint: (0.5, 1)
+                pos_hint: {"x":0,"center_y":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.3
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                        source: "Imagensapp\Lavita_logo.png"
+
+            FloatLayout:
+                size_hint: (0.5, 0.5)
+                pos_hint: {"x":0.5,"center_y":0.25}
+
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 0.3
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                        source: "Imagensapp\Logo_UMC.jpg"
+
+
+
+<SecondWindow>:
+    name: "second"
+    canvas.before:
+        Color:
+            rgba: 227/255, 227/255, 230/255, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    FloatLayout:
+        cols:1
+        size_hint: 1,1
+        pos_hint: {"center_y":0.5, "center_x":0.5}
+
+#--------Botoes para Telas-------
+
+        FloatLayout:
+            pos_hint: {"top":1, "x":0}
+            size_hint: 1,0.14
+
+            Button:
+                text: " "
+                id: Bback
+                font_size: 22
+                size_hint: 0.12,0.8
+                pos_hint: {"center_y":0.5, "x":0.03}
+                background_color: 197/255, 140/255, 16/255, 0
+                background_normal: ''
+                image_source: "Bot1back.png" if root.source == 1 else "Bot1backBr.png"
+
+                on_release:
+                    app.root.current = "main"
+
+                Image:
+                    source: Bback.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    allow_stretch: True
+                    size: (105,88)
+                    keep_ratio: False
+                    color: [1,1,1,1] if Bback.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            FloatLayout:
+                size_hint: (0.5, 0.6)
+                pos_hint: {"x":0.47,"center_y":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                        source: "NomeTT.png"
+
+#----------- Tradução --------------
+
+        FloatLayout:
+            pos_hint: {"top":1, "x":0.2}
+            size_hint: 0.25,0.17
+            
+            
+            Button:
+                text: "In"
+                id: Conf
+                font_size: 22
+                size_hint: 0.2,0.35
+                pos_hint: {"top":0.95, "x":0.1}
+                background_color: 46/255, 148/255, 160/255, 0
+                background_normal: ''
+                on_release:
+                    root.Registrar2()
+                    Bback.image_source = "Bot1back.png" if root.source == 1 else "Bot1backBr.png"
+                    Tailtemp.text = "Tail temperature (°C)" if root.text == 1 else "Temperatura da Cauda (°C)"
+                    DesiTemp.text = "Desired temperature (°C)" if root.text == 1 else "Temperatura desejada (°C)"
+                    Binici.image_source = "Butsta.png" if root.source == 1 else "ButstaBr.png"
+                    PreSS.text = "Systolic Pressure" if root.text == 1 else "Pressão Sistólica"
+                    PreDD.text = "Diastolic Pressure" if root.text == 1 else "Pressão Diastólica"
+                    syringe_use.text = "Used Syringe" if root.text == 1 else "Seringa Utilizada"
+                    syriing.text = "Select" if root.text == 1 else "Selecionar"
+                    FlowRa.text = "Flow rate (mL/h)" if root.text == 1 else "Taxa de infusão (mL/h)"
+                    Binicio.image_source = "Butsta.png" if root.source == 1 else "ButstaBr.png"
+                    Bparar.image_source = "Butpaus.png" if root.source == 1 else "ButpausBr.png"
+                    Bvoltar.image_source = "Butbac.png" if root.source == 1 else "ButbacBr.png"
+
+                Image:
+                    source: 'iconBR.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (50,35)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,0.8] if Conf.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Button:
+                text: "Atua"
+                id: atualizar
+                font_size: 22
+                size_hint: 0.2,0.35
+                pos_hint: {"top":0.95, "x":0.38}
+                background_color: 46/255, 148/255, 160/255, 0
+                background_normal: ''
+                on_release:
+                    root.Registrar3()
+                    Bback.image_source = "Bot1back.png" if root.source == 1 else "Bot1backBr.png"
+                    Tailtemp.text = "Tail temperature (°C)" if root.text == 1 else "Temperatura da Cauda (°C)"
+                    DesiTemp.text = "Desired temperature (°C)" if root.text == 1 else "Temperatura desejada (°C)"
+                    Binici.image_source = "Butsta.png" if root.source == 1 else "ButstaBr.png"
+                    PreSS.text = "Systolic Pressure" if root.text == 1 else "Pressão Sistólica"
+                    PreDD.text = "Diastolic Pressure" if root.text == 1 else "Pressão Diastólica"
+                    syringe_use.text = "Used Syringe" if root.text == 1 else "Seringa Utilizada"
+                    syriing.text = "Select" if root.text == 1 else "Selecionar"
+                    FlowRa.text = "Flow rate (mL/h)" if root.text == 1 else "Taxa de infusão (mL/h)"
+                    Binicio.image_source = "Butsta.png" if root.source == 1 else "ButstaBr.png"
+                    Bparar.image_source = "Butpaus.png" if root.source == 1 else "ButpausBr.png"
+                    Bvoltar.image_source = "Butbac.png" if root.source == 1 else "ButbacBr.png"
+
+
+                Image:
+                    source: 'iconUSA.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (50,35)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,0.8] if atualizar.state == "normal" else [0.5,0.5,0.5,1]
+
+#---------Temperatura chapa------------------
+        
+        FloatLayout:
+            pos_hint: {"top":0.85, "x":0}
+            size_hint: 1,0.14
+
+            Label:
+                id: Tailtemp
+                text: "Tail temperature (°C)" if root.text == 1 else "Temperatura da Cauda (°C)"
+                pos_hint: {"top":0.74, "x":0.12}
+                size_hint: 0.1,0.2
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0
+                bold: True
+                italic: False
+
+            Label:
+                id: plate_temp
+                text: "25"
+                pos_hint: {"top":0.74, "x":0.32}
+                size_hint: 0.1,0.2
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 0, 0, 0, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                # Text Properties
+                color: 0,0,0,1
+                bold: False
+                italic: False
+
+
+#----------Situação do sistema Temp---------
+
+        FloatLayout:
+            pos_hint: {"top":0.74, "x":0}
+            size_hint: 1,0.12
+
+            Label:
+                id: system_temp
+                text: "●"
+                pos_hint: {"top":0.60, "x":0.3}
+                size_hint: 0.05,0.5
+                font_size: 60
+                font_name: 'Comic'
+                background_color: 227/255, 227/255, 230/255, 1
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 197/255, 22/255, 35/255
+                bold: True
+                italic: False
+                #outline_color: 0,0,0,0
+                #outline_width: 5
+
+
+#---------Temperatura desejada--------
+
+        FloatLayout:
+            pos_hint: {"top":0.78, "x":0}
+            size_hint: 1,0.14
+
+            Label:
+                id: DesiTemp
+                text: "Desired temperature (°C)" if root.text == 1 else "Temperatura desejada (°C)"
+                pos_hint: {"top":0.74, "x":0.13}
+                size_hint: 0.1,0.2
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0
+                bold: True
+                italic: False
+
+            TextInput:
+                id: chapa_dese
+                font_size: 20
+                font_name: 'Comic'
+                text: " "
+                multiline: False
+                disabled: False
+                pos_hint: {"top":0.85, "x":0.34}
+                size_hint: 0.08,0.5
+
+        
+#--------Botoes para ligar Temp---------
+           
+        FloatLayout:
+            pos_hint: {"top":0.72, "x":0}
+            size_hint: 1,0.12
+
+            Button:
+                id: Tempinicio
+                text: "n"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.74, "x":0.18}
+                background_color: 46/255, 140/255, 16/255, 0
+                background_normal: ''
+                on_release:
+                    root.TempInicio()
+                    chapa_dese.disabled = True
+
+                Image:
+                    source: 'Buton.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Tempinicio.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Button:
+                id: Tempfinal
+                text: "O"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.74, "x":0.08}
+                background_color: 156/255, 34/255, 43/255, 0
+                background_normal: ''
+                on_release:
+                    root.TempFim()
+                    chapa_dese.disabled = False
+
+                Image:
+                    source: 'Butoff.png'
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Tempfinal.state == "normal" else [0.5,0.5,0.5,1]
+
+#---------Pressao--------------
+
+        FloatLayout:
+            pos_hint: {"top":0.54, "x":0}
+            size_hint: 1,0.14
+
+
+            Button:
+                id: Binici
+                text: "n"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.33, "x":0.18}
+                background_color: 46/255, 140/255, 16/255, 0 
+                background_normal: ''
+                image_source: "Butsta.png" if root.source == 1 else "ButstaBr.png"
+
+                on_release:
+                    root.IniCol()
+                    
+                Image:
+                    source: Binici.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Binici.state == "normal" else [0.5,0.5,0.5,1]
+
+       
+            Label:
+                id: system_press
+                text: "●"
+                pos_hint: {"top":0.33, "x":0.3}
+                size_hint: 0.05,0.5
+                font_size: 60
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 197/255, 22/255, 35/255
+                bold: True
+                italic: False
+                #outline_color: 0,0,0,0
+                #outline_width: 5    
+
+        BoxLayout:
+            id: ArdBox 
+            pos_hint: {"top":0.85, "x":0.48}
+            size_hint: 0.5,0.83
+            
+
+#------------- ECG --------------           
+
+        FloatLayout:
+            pos_hint: {"top":0.94, "x":0.3}
+            size_hint: 1,0.14
+
+
+            Button:
+                id: ECGBt
+                text: "n"
+                font_size: 22
+                size_hint: 0.1,0.5
+                pos_hint: {"top":0.13, "x":0.18}
+                background_color: 197/255, 140/255, 16/255, 0 
+                background_normal: ''
+                image_source: "BotECG.jpg" 
+
+                on_release:
+                    root.ECGCol()
+                    
+                Image:
+                    source: ECGBt.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: False
+                    color: [1,1,1,1] if ECGBt.state == "normal" else [0.5,0.5,0.5,1]
+              
+
+       
+            Label:
+                id: system_ecg
+                text: "●"
+                pos_hint: {"top":0.33, "x":0.3}
+                size_hint: 0.05,0.5
+                font_size: 60
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 197/255, 22/255, 35/255
+                bold: True
+                italic: False
+                #outline_color: 0,0,0,0
+                #outline_width: 5    
+
+        BoxLayout:
+            id: ArdBox 
+            pos_hint: {"top":0.85, "x":0.48}
+            size_hint: 0.5,0.83
+
+
+#------------- Resultado Pressao --------------
+
+        FloatLayout:
+            pos_hint: {"top":0.56, "x":0}
+            size_hint: 1,0.12
+
+            Label:
+                id: PreSS
+                text: "Systolic Pressure" if root.text == 1 else "Pressão Sistólica"
+                pos_hint: {"top":0.74, "x":0.12}
+                size_hint: 0.1,0.2
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0
+                bold: True
+                italic: False
+                
+                
+            Label:
+                id: Sis
+                text: " 120.50 "
+                pos_hint: {"top":0.74, "x":0.28}
+                size_hint: 0.1,0.2
+                font_size: 20
+                multiline: False
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0
+                bold: True
+                italic: False
+                   
+
+
+            Label:
+                id: PreDD
+                text: "Diastolic Pressure" if root.text == 1 else "Pressão Diastólica"
+                pos_hint: {"top":0.30, "x":0.12}
+                size_hint: 0.1,0.2
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0
+                bold: True
+                italic: False
+                
+
+
+            Label:
+                id: Dia
+                text: "80.50"
+                pos_hint: {"top":0.30, "x":0.28}
+                size_hint: 0.1,0.2
+                font_size: 20
+                multiline: False
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 0, 0, 0, 1
+                bold: True
+                italic: False
+
+
+
+#---------Bomba----------
+
+        FloatLayout:
+            pos_hint: {"top":0.3, "x":0}
+            size_hint: 1,0.12
+
+            Label:
+                id: syringe_use
+                text: "Used Syringe" if root.text == 1 else "Seringa Utilizada"
+                pos_hint: {"top":0.8, "x":0.02}
+                size_hint: 0.2,0.5
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                # Text Properties
+                color: 0,0,0,1
+                bold: False
+                italic: False
+
+            
+            Spinner: 
+                id: syriing
+                text: "Select" if root.text == 1 else "Selecionar"
+                pos_hint: {"top":0.8, "x":0.23}
+                size_hint: 0.2,0.5
+                font_size: 20
+                font_name: 'Comic'
+                values: ["20 mL", "10 mL", "5 mL", "3 mL"]
+
+                on_text: root.spinner_clicked(syriing.text)
+
+#---------- taxa de infusão -----------                                                            
+
+        FloatLayout:
+            pos_hint: {"top":0.23, "x":0}
+            size_hint: 1,0.14
+
+
+            Label:
+                id: FlowRa
+                text: "Flow rate (mL/h)" if root.text == 1 else "Taxa de infusão (mL/h)"
+                pos_hint: {"top":0.77, "x":0.04}
+                size_hint: 0.2,0.5
+                font_size: 20
+                font_name: 'Comic'
+                background_color: 236/255, 168/255, 168/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                # Text Properties
+                color: 0,0,0,1
+                bold: False
+                italic: False  
+
+            TextInput:
+                id: PortArd2
+                text: "  "
+                font_size: 20
+                pos_hint: {"top":0.77, "x":0.28}
+                size_hint: 0.1,0.5
+                multiline: False
+                disabled: False
+                
+
+#----------- Botoes para iniciar -------------
+
+        FloatLayout:
+            pos_hint: {"top":0.15, "x":0}
+            size_hint: 1,0.14
+
+            Button:
+                id: Binicio
+                text: "n"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.8, "x":0.23}
+                background_color: 46/255, 140/255, 16/255, 0
+                background_normal: ''
+                image_source: "Butsta.png" if root.source == 1 else "ButstaBr.png"
+
+                on_release:
+                    root.Iniciob()
+                    PortArd2.disabled = True
+                    
+
+                Image:
+                    source: Binicio.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Binicio.state == "normal" else [0.5,0.5,0.5,1]
+
+
+            Button:
+                id: Bparar
+                text: "O"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.8, "x":0.125}
+                background_color: 156/255, 34/255, 43/255, 0
+                background_normal: ''
+                image_source: "Butpaus.png" if root.source == 1 else "ButpausBr.png"
+
+                on_release:
+                    #root.Pararb()
+                    root.SalvarArd()
+                    #PortArd2.disabled = False
+                    
+
+                Image:
+                    source: Bparar.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (90,75)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Bparar.state == "normal" else [0.5,0.5,0.5,1]
+            
+            
+            Button:
+                id: Bvoltar
+                text: "O"
+                font_size: 25
+                size_hint: 0.12,0.8
+                pos_hint: {"top":0.8, "x":0.02}
+                background_color: 156/255, 34/255, 43/255, 0
+                background_normal: ''
+                image_source: "Butbac.png" if root.source == 1 else "ButbacBr.png"
+
+                on_release:
+                    root.Voltarb()
+                    PortArd2.disabled = True
+                    
+
+                Image:
+                    source: Bvoltar.image_source
+                    center_y: self.parent.center_y
+                    center_x: self.parent.center_x
+                    size: (80,65)
+                    allow_stretch: True
+                    keep_ratio: True
+                    color: [1,1,1,1] if Bvoltar.state == "normal" else [0.5,0.5,0.5,1]
+
+#----------Situação do sistema Bomba---------
+
+        FloatLayout:
+            pos_hint: {"top":0.23, "x":0}
+            size_hint: 1,0.12
+
+            Label:
+                id: system_bomba
+                text: "●"
+                pos_hint: {"top":0.85, "x":0.39}
+                size_hint: 0.05,0.5
+                font_size: 60
+                font_name: 'Comic'
+                background_color: 211/255, 230/255, 241/255, 0
+                canvas.before:
+                    Color:
+                        rgba: self.background_color
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+
+                # Text Properties
+                color: 197/255, 22/255, 35/255
+                bold: True
+                italic: False
+                #outline_color: 0,0,0,0
+                #outline_width: 5               
+
+
+
+
