@@ -3,6 +3,7 @@
 
 import matplotlib.pyplot as plt
 import openpyxl
+from openpyxl import load_workbook
 import numpy as np
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
@@ -23,6 +24,9 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 
 #Primeiro filtro para Remover linha de base
 
+
+
+
 def isoline_correction(filtered_signal):
     # Esta função deve corrigir qualquer offset constante no sinal filtrado
     # Implementação fictícia para propósito ilustrativo
@@ -30,13 +34,27 @@ def isoline_correction(filtered_signal):
     corrected_signal = filtered_signal - offset
     return corrected_signal, offset
 
-def ecg_baseline_removal(signal, samplerate, window_length, overlap):
+
+def ecg_baseline_removal():
+#def ecg_baseline_removal(signal, samplerate, window_length, overlap):
     # Propriedades do sinal
 
+    samplerate = 250
+    window_length = 1
+    overlap = 0.5
 
-    L, NCH = signal.shape  # comprimento do sinal e número de canais
+
+    L = signal.shape  # comprimento do sinal e número de canais
+    #L = 115200
+    NCH = 1
+
+    print(L)
+
     baseline = np.zeros_like(signal)  # matriz para armazenar o baseline
+    print(baseline)
     filtered_signal = np.zeros_like(signal)  # matriz para o sinal filtrado
+    print(filtered_signal)
+
 
     window_length = int(round(window_length * samplerate))  # comprimento da janela em amostras
     window_length = window_length + 1 - window_length % 2  # garante que o comprimento seja ímpar
@@ -83,12 +101,6 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
 # filtered_signal, baseline = ecg_baseline_removal(signal, samplerate, window_length, overlap)
 
 
-def ECG_Baseline_Removal():
-
-    #ele levanta os dados para cima de forma q os segmentos fiquem o mais
-    #proximos de 0
-    print(df)
-
 
 # Função para abrir a caixa de diálogo e selecionar o arquivo Excel
 def selecionar_arquivo():
@@ -104,21 +116,31 @@ caminho_do_arquivo = selecionar_arquivo()
 # Verificar se um arquivo foi selecionado
 if caminho_do_arquivo:
     # Carregar o arquivo Excel, especificando que queremos apenas a primeira coluna
-    df = pd.read_excel(caminho_do_arquivo, usecols=[0])
-    signal = df
+
+    '''df = pd.read_excel(caminho_do_arquivo, usecols=[0])
     dados = df[1:2000]
-
-    print(dados)
-
-    ecg_baseline_removal()
-
-    '''plt.plot(dados)
+    plt.plot(dados)
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
     plt.show()'''
 
-    #print(df.to_string(index=False))
+    workbook = load_workbook(filename=caminho_do_arquivo)
+    # Selecionar a primeira planilha ativa
+    sheet = workbook.active
+    # Iterar sobre as células da primeira coluna (A) e criar uma lista
+    matriz_uma_coluna = [cell.value for cell in sheet['A']]
+    # Exibir a lista como uma matriz de uma linha
+    signal = np.array(matriz_uma_coluna)
+
+
+
+
+    #Tentar mudar o dado para plotar no grafico
+
+
+    ecg_baseline_removal()
+
 else:
     print("Nenhum arquivo foi selecionado.")
 
