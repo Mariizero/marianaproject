@@ -12,7 +12,7 @@ import plotly.graph_objs as go
 
 from plotly.subplots import make_subplots
 from scipy.stats import iqr
-from scipy.signal import find_peaks
+from scipy.signal import butter, filtfilt
 from scipy.interpolate import PchipInterpolator
 
 import kivy
@@ -24,8 +24,9 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 
 #Primeiro filtro para Remover linha de base
 
-
-
+samplerate = 250
+window_length = 1
+overlap = 0.5
 
 def isoline_correction(filtered_signal):
     # Esta função deve corrigir qualquer offset constante no sinal filtrado
@@ -35,30 +36,26 @@ def isoline_correction(filtered_signal):
     return corrected_signal, offset
 
 
-def ecg_baseline_removal():
-#def ecg_baseline_removal(signal, samplerate, window_length, overlap):
+
+def ecg_baseline_removal(signal, samplerate, window_length, overlap):
     # Propriedades do sinal
 
-    samplerate = 250
-    window_length = 1
-    overlap = 0.5
 
+    L = signal.shape[0]  # comprimento do sinal
 
-    L = signal.shape  # comprimento do sinal e número de canais
-    #L = 115200
-    NCH = 1
+    if signal.ndim == 1:
+        signal = signal.reshape(-1, 1)  # garante que o sinal seja 2D
+    NCH = signal.shape[1]
+    #NCH = 1
 
-    print(L)
-
-    baseline = np.zeros_like(signal)  # matriz para armazenar o baseline
-    print(baseline)
+    baseline = np.zeros_like(signal)  # matriz para armazenar o baseline 0. 0.
     filtered_signal = np.zeros_like(signal)  # matriz para o sinal filtrado
-    print(filtered_signal)
 
 
     window_length = int(round(window_length * samplerate))  # comprimento da janela em amostras
     window_length = window_length + 1 - window_length % 2  # garante que o comprimento seja ímpar
     window_half_length = (window_length - 1) // 2  # metade do comprimento da janela
+
 
     if 0 <= overlap < 1:
         N = int(np.floor((L - window_length * overlap) / (window_length * (1 - overlap))))  # número de janelas
@@ -69,6 +66,7 @@ def ecg_baseline_removal():
         N = len(center)  # número de janelas
     else:
         raise ValueError('overlap must be a number between 0 and 1')
+
 
     for j in range(NCH):
         baseline_points = np.zeros(center.shape)  # aloca memória para os pontos do baseline
@@ -85,21 +83,242 @@ def ecg_baseline_removal():
         filtered_signal[:, j], offset = isoline_correction(filtered_signal[:, j])
         baseline[:, j] += offset
 
+        '''dados = filtered_signal[1:2000]
+        print(dados)
+        plt.plot(dados)
+        plt.title('Baseline Removal')
+        plt.xlabel('Time in ms')
+        plt.ylabel('Voltage in mV')
+        plt.show()'''
+
     return filtered_signal, baseline
 
+#Segundo filtro para Filtrar sinal
+
+
+
+import numpy as np
+from scipy.signal import butter, filtfilt, sosfiltfilt
+
+
+def isoline_correction(signal):
+    offset = np.mean(signal, axis=0)
+    return signal - offset
+
+
+def butter_highpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    sos = butter(order, normal_cutoff, btype='high', analog=False, output='sos')
+    return sos
+
+
+def highpass_filter(signal, samplerate, highpass_frequency, filter_type='Butterworth'):
+    # Verificação e transposição do sinal
+    if signal.ndim == 1:
+        signal = signal.reshape(-1, 1)
+    transposeflag = signal.shape[0] < signal.shape[1]
+    if transposeflag:
+        signal = signal.T
+
+    if filter_type.lower() in ['smooth', 's']:
+        case_var = 1
+    elif filter_type.lower() in ['gauss', 'g']:
+        case_var = 2
+    elif filter_type.lower() in ['butterworth', 'b']:
+        case_var = 3
+    else:
+        raise ValueError('Filter type not recognized')
+
+    if not isinstance(signal, np.double):
+        signal = signal.astype(np.double)
+
+    NCH = signal.shape[1]
+
+    l = int(round(samplerate * 10))
+    filteredsignal = np.pad(signal, ((l, l), (0, 0)), 'constant')
+
+    if highpass_frequency > samplerate / 2:
+        print('Warning: Lowpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
+        highpass_frequency = np.floor(samplerate / 2 - 1)
+
+    if case_var in [1, 3]:
+        order = 3
+        sos = butter_highpass(highpass_frequency, samplerate, order=order)
+        for j in range(NCH):
+            filteredsignal[:, j] = sosfiltfilt(sos, filteredsignal[:, j])
+    else:
+        sigmaf = highpass_frequency
+        sigma = samplerate / (2 * np.pi * sigmaf)
+        length_gauss = 2 * round(4 * sigma) + 1
+        x = np.linspace(-length_gauss // 2, length_gauss // 2, length_gauss)
+        h = -np.exp(-(x ** 2) / (2 * sigma ** 2))
+        h[length_gauss // 2] = 1 + h[length_gauss // 2]
+        for i in range(NCH):
+            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], h, mode='same')
+
+    filteredsignal = filteredsignal[l:-l, :]
+    filteredsignal = isoline_correction(filteredsignal)
+
+    if transposeflag:
+        filteredsignal = filteredsignal.T
+
+    return filteredsignal.squeeze()
+
+
 # Exemplo de uso
-# signal: matriz (numpy array) com o sinal ECG
-# samplerate: taxa de amostragem (Hz)
-# window_length: comprimento da janela (segundos)
-# overlap: sobreposição (valor entre 0 e 1)
+samplerate = 500
+highpass_frequency = 0.5
 
-# signal = np.array(...)  # seu sinal ECG aqui
-# samplerate = 500  # exemplo de taxa de amostragem
-# window_length = 0.2  # exemplo de comprimento da janela em segundos
-# overlap = 0.5  # exemplo de sobreposição
+# Sinal sintético de exemplo
+t = np.linspace(0, 10, samplerate * 10)
+signal = np.sin(2 * np.pi * 1 * t)
 
-# filtered_signal, baseline = ecg_baseline_removal(signal, samplerate, window_length, overlap)
+# Chamando a função
+filtered_signal = highpass_filter(signal, samplerate, highpass_frequency, 'Butterworth')
 
+# Mostrando os resultados
+print("Filtered Signal:", filtered_signal)
+
+# passa baixa
+
+import numpy as np
+from scipy.signal import butter, filtfilt, sosfiltfilt
+
+
+def isoline_correction(signal):
+    offset = np.mean(signal, axis=0)
+    return signal - offset
+
+
+def butter_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    sos = butter(order, normal_cutoff, btype='low', analog=False, output='sos')
+    return sos
+
+
+def lowpass_filter(signal, samplerate, lowpass_frequency, filter_type='Butterworth'):
+    # Verificação e transposição do sinal
+    if signal.ndim == 1:
+        signal = signal.reshape(-1, 1)
+    transposeflag = signal.shape[0] < signal.shape[1]
+    if transposeflag:
+        signal = signal.T
+
+    if filter_type.lower() in ['smooth', 's']:
+        case_var = 1
+    elif filter_type.lower() in ['gauss', 'g']:
+        case_var = 2
+    elif filter_type.lower() in ['butterworth', 'b']:
+        case_var = 3
+    else:
+        raise ValueError('Filter type not recognized')
+
+    if not isinstance(signal, np.double):
+        signal = signal.astype(np.double)
+
+    NCH = signal.shape[1]
+
+    l = int(round(samplerate * 10))
+    filteredsignal = np.pad(signal, ((l, l), (0, 0)), 'constant')
+
+    if lowpass_frequency > samplerate / 2:
+        print('Warning: Lowpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
+        lowpass_frequency = np.floor(samplerate / 2 - 1)
+
+    if case_var == 1:
+        nw = round(samplerate / lowpass_frequency)
+        for i in range(NCH):
+            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], np.ones((nw,)) / nw, mode='same')
+    elif case_var == 2:
+        sigmaf = lowpass_frequency
+        sigma = samplerate / (2 * np.pi * sigmaf)
+        length_gauss = 2 * round(4 * sigma) + 1
+        x = np.linspace(-length_gauss // 2, length_gauss // 2, length_gauss)
+        h = np.exp(-(x ** 2) / (2 * sigma ** 2))
+        h = h / np.sum(h)
+        for i in range(NCH):
+            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], h, mode='same')
+    elif case_var == 3:
+        order = 3
+        sos = butter_lowpass(lowpass_frequency, samplerate, order=order)
+        for j in range(NCH):
+            filteredsignal[:, j] = sosfiltfilt(sos, filteredsignal[:, j])
+
+    filteredsignal = filteredsignal[l:-l, :]
+    filteredsignal = isoline_correction(filteredsignal)
+
+    if transposeflag:
+        filteredsignal = filteredsignal.T
+
+    return filteredsignal.squeeze()
+
+
+# Exemplo de uso
+samplerate = 500
+lowpass_frequency = 40
+
+# Sinal sintético de exemplo
+t = np
+
+#chama os dois
+import numpy as np
+from scipy.signal import butter, filtfilt
+
+
+def butter_highpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='high', analog=False)
+    return b, a
+
+
+def butter_lowpass(cutoff, fs, order=5):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+
+def highpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_highpass(cutoff, fs, order=order)
+    y = filtfilt(b, a, data)
+    return y
+
+
+def lowpass_filter(data, cutoff, fs, order=5):
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = filtfilt(b, a, data)
+    return y
+
+
+def ecg_high_low_filter(signal, samplerate, highpass_frequency, lowpass_frequency, filter_type='Butterworth'):
+    if filter_type == 'Butterworth':
+        # Apply highpass filter
+        filtered_signal = highpass_filter(signal, highpass_frequency, samplerate)
+        # Apply lowpass filter
+        filtered_signal = lowpass_filter(filtered_signal, lowpass_frequency, samplerate)
+    else:
+        raise ValueError(f"Filter type {filter_type} not supported. Only 'Butterworth' is implemented.")
+
+    return filtered_signal
+
+
+# Exemplo de uso
+samplerate = 500  # exemplo de taxa de amostragem em Hz
+highpass_frequency = 0.5  # exemplo de frequência de corte passa-alta em Hz
+lowpass_frequency = 40.0  # exemplo de frequência de corte passa-baixa em Hz
+
+# Gerando um sinal ECG sintético para exemplo
+t = np.linspace(0, 10, samplerate * 10)
+signal = np.sin(2 * np.pi * 1 * t)  # sinal sintético de exemplo, substitua pelo seu sinal real
+
+# Chamando a função
+filtered_signal = ecg_high_low_filter(signal, samplerate, highpass_frequency, lowpass_frequency)
+
+# Mostrando os resultados
+print("Filtered Signal:", filtered_signal)
 
 
 # Função para abrir a caixa de diálogo e selecionar o arquivo Excel
@@ -117,13 +336,6 @@ caminho_do_arquivo = selecionar_arquivo()
 if caminho_do_arquivo:
     # Carregar o arquivo Excel, especificando que queremos apenas a primeira coluna
 
-    '''df = pd.read_excel(caminho_do_arquivo, usecols=[0])
-    dados = df[1:2000]
-    plt.plot(dados)
-    plt.title('Unfiltered ECG Signal Lead I')
-    plt.xlabel('Time in ms')
-    plt.ylabel('Voltage in mV')
-    plt.show()'''
 
     workbook = load_workbook(filename=caminho_do_arquivo)
     # Selecionar a primeira planilha ativa
@@ -133,13 +345,18 @@ if caminho_do_arquivo:
     # Exibir a lista como uma matriz de uma linha
     signal = np.array(matriz_uma_coluna)
 
+    # PARTE DO GRAFICO Q DA ERRO NO MAC
+    '''dados = signal[1:2000]
+    plt.plot(dados)
+    plt.title('Unfiltered ECG Signal Lead I')
+    plt.xlabel('Time in ms')
+    plt.ylabel('Voltage in mV')
+    plt.show()'''
 
 
 
-    #Tentar mudar o dado para plotar no grafico
 
-
-    ecg_baseline_removal()
+    filtered_signal, baseline = ecg_baseline_removal(signal, samplerate,window_length, overlap)
 
 else:
     print("Nenhum arquivo foi selecionado.")
