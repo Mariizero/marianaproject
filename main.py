@@ -7,18 +7,140 @@ from openpyxl import load_workbook
 import numpy as np
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-import pandas as pd
 import plotly.graph_objs as go
 
+from scipy.ndimage import gaussian_filter1d
+from scipy.interpolate import PchipInterpolator
 from plotly.subplots import make_subplots
 from scipy.stats import iqr
-from scipy.signal import butter, filtfilt
 from scipy.interpolate import PchipInterpolator
+from scipy.signal import butter, filtfilt, sosfiltfilt
 
 import kivy
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+
+
+#Segundo filtro para Filtrar sinal ELE ESTA INICIALIZANDO DIRETO VER ISSO
+
+def ecg_filter(signal, samplerate, filter_type, lowpass_frequency=None, highpass_frequency=None, filter_method='Butterworth'):
+    # Ensure the signal is a 2D array (n_samples, n_channels)
+    if signal.ndim == 1:
+        signal = signal[:, np.newaxis]
+        print('Passando por aqui')
+
+    if signal.shape[1] > signal.shape[0]:
+        signal = signal.T
+        transpose_flag = True
+    else:
+        transpose_flag = False
+
+    if filter_method.lower() in ['smooth', 's']:
+        case_var = 1
+    elif filter_method.lower() in ['gauss', 'g']:
+        case_var = 2
+    elif filter_method.lower() in ['butterworth', 'b']:
+        case_var = 3
+    else:
+        raise ValueError('Filter type not recognized')
+
+    # Convert signal to double if it's not already
+    if not np.issubdtype(signal.dtype, np.float64):
+        signal = signal.astype(np.float64)
+
+    # Number of channels
+    n_samples, n_channels = signal.shape
+    print('Passando por aqui 2')
+
+    # Extend signal to avoid bordering artifacts
+    l = int(round(samplerate * 10))
+    filteredsignal = np.pad(signal, ((l, l), (0, 0)), mode='constant')
+
+    if lowpass_frequency and lowpass_frequency > samplerate / 2:
+        print('Warning: Lowpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
+        lowpass_frequency = samplerate / 2 - 1
+
+    if highpass_frequency and highpass_frequency > samplerate / 2:
+        print('Warning: Highpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
+        highpass_frequency = samplerate / 2 - 1
+
+    if filter_type == 'low':
+        filteredsignal = apply_lowpass_filter(filteredsignal, samplerate, lowpass_frequency, case_var, n_channels)
+    elif filter_type == 'high':
+        filteredsignal = apply_highpass_filter(filteredsignal, samplerate, highpass_frequency, case_var, n_channels)
+    elif filter_type == 'band':
+        if lowpass_frequency is None or highpass_frequency is None:
+            raise ValueError('Both lowpass_frequency and highpass_frequency must be specified for bandpass filter.')
+        filteredsignal = apply_bandpass_filter(filteredsignal, samplerate, lowpass_frequency, highpass_frequency,
+                                               case_var, n_channels)
+    else:
+        raise ValueError('Filter type not recognized')
+
+    # Remove extension of signal
+    filteredsignal = filteredsignal[l:-l, :]
+
+    # Constant offset removal
+    filteredsignal = isoline_correction(filteredsignal)
+
+    if transpose_flag:
+        filteredsignal = filteredsignal.T
+
+    return filteredsignal
+
+
+def apply_lowpass_filter(signal, samplerate, lowpass_frequency, case_var, n_channels):
+    if case_var == 1:  # Smoothing filter
+        nw = int(round(samplerate / lowpass_frequency))
+        for i in range(n_channels):
+            signal[:, i] = smooth(signal[:, i], nw)
+    elif case_var == 2:  # Gaussian filter
+        sigmaf = lowpass_frequency
+        sigma = samplerate / (2 * np.pi * sigmaf)
+        signal = gaussian_filter1d(signal, sigma, axis=0)
+    elif case_var == 3:  # Butterworth filter
+        order = 3
+        sos = butter(order, 2 * lowpass_frequency / samplerate, btype='low', output='sos')
+        for i in range(n_channels):
+            signal[:, i] = sosfiltfilt(sos, signal[:, i])
+    return signal
+
+
+def apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels):
+    if case_var == 3:  # Butterworth filter
+        order = 3
+        sos = butter(order, 2 * highpass_frequency / samplerate, btype='high', output='sos')
+        for i in range(n_channels):
+            signal[:, i] = sosfiltfilt(sos, signal[:, i])
+    else:
+        raise NotImplementedError("High-pass filter is only implemented for Butterworth filter.")
+    return signal
+
+
+def apply_bandpass_filter(signal, samplerate, lowpass_frequency, highpass_frequency, case_var, n_channels):
+    signal = apply_lowpass_filter(signal, samplerate, lowpass_frequency, case_var, n_channels)
+    signal = apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels)
+    return signal
+
+
+def isoline_correction(signal):
+    return signal - np.mean(signal, axis=0)
+
+
+def smooth(signal, window_len):
+    s = np.r_[signal[window_len - 1:0:-1], signal, signal[-2:-window_len - 1:-1]]
+    w = np.hanning(window_len)
+    y = np.convolve(w / w.sum(), s, mode='valid')
+    return y[int(window_len / 2 - 1):-int(window_len / 2)]
+
+
+# Example usage
+if __name__ == '__main__':
+    samplerate = 500  # Example sample rate
+    signal = np.sin(2 * np.pi * 1 * np.arange(0, 10, 1 / samplerate))  # Example signal
+    lowpass_frequency = 40
+    highpass_frequency = 1
+    filtered_signal = ecg_filter(signal, samplerate, 'band', lowpass_frequency, highpass_frequency, 'Butterworth')
 
 
 
@@ -35,11 +157,8 @@ def isoline_correction(filtered_signal):
     corrected_signal = filtered_signal - offset
     return corrected_signal, offset
 
-
-
 def ecg_baseline_removal(signal, samplerate, window_length, overlap):
     # Propriedades do sinal
-
 
     L = signal.shape[0]  # comprimento do sinal
 
@@ -91,234 +210,11 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         plt.ylabel('Voltage in mV')
         plt.show()'''
 
+
+        filtered_signal = ecg_filter(signal, samplerate, 'band', lowpass_frequency, highpass_frequency, 'Butterworth')
+
     return filtered_signal, baseline
 
-#Segundo filtro para Filtrar sinal
-
-
-
-import numpy as np
-from scipy.signal import butter, filtfilt, sosfiltfilt
-
-
-def isoline_correction(signal):
-    offset = np.mean(signal, axis=0)
-    return signal - offset
-
-
-def butter_highpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    sos = butter(order, normal_cutoff, btype='high', analog=False, output='sos')
-    return sos
-
-
-def highpass_filter(signal, samplerate, highpass_frequency, filter_type='Butterworth'):
-    # Verificação e transposição do sinal
-    if signal.ndim == 1:
-        signal = signal.reshape(-1, 1)
-    transposeflag = signal.shape[0] < signal.shape[1]
-    if transposeflag:
-        signal = signal.T
-
-    if filter_type.lower() in ['smooth', 's']:
-        case_var = 1
-    elif filter_type.lower() in ['gauss', 'g']:
-        case_var = 2
-    elif filter_type.lower() in ['butterworth', 'b']:
-        case_var = 3
-    else:
-        raise ValueError('Filter type not recognized')
-
-    if not isinstance(signal, np.double):
-        signal = signal.astype(np.double)
-
-    NCH = signal.shape[1]
-
-    l = int(round(samplerate * 10))
-    filteredsignal = np.pad(signal, ((l, l), (0, 0)), 'constant')
-
-    if highpass_frequency > samplerate / 2:
-        print('Warning: Lowpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
-        highpass_frequency = np.floor(samplerate / 2 - 1)
-
-    if case_var in [1, 3]:
-        order = 3
-        sos = butter_highpass(highpass_frequency, samplerate, order=order)
-        for j in range(NCH):
-            filteredsignal[:, j] = sosfiltfilt(sos, filteredsignal[:, j])
-    else:
-        sigmaf = highpass_frequency
-        sigma = samplerate / (2 * np.pi * sigmaf)
-        length_gauss = 2 * round(4 * sigma) + 1
-        x = np.linspace(-length_gauss // 2, length_gauss // 2, length_gauss)
-        h = -np.exp(-(x ** 2) / (2 * sigma ** 2))
-        h[length_gauss // 2] = 1 + h[length_gauss // 2]
-        for i in range(NCH):
-            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], h, mode='same')
-
-    filteredsignal = filteredsignal[l:-l, :]
-    filteredsignal = isoline_correction(filteredsignal)
-
-    if transposeflag:
-        filteredsignal = filteredsignal.T
-
-    return filteredsignal.squeeze()
-
-
-# Exemplo de uso
-samplerate = 500
-highpass_frequency = 0.5
-
-# Sinal sintético de exemplo
-t = np.linspace(0, 10, samplerate * 10)
-signal = np.sin(2 * np.pi * 1 * t)
-
-# Chamando a função
-filtered_signal = highpass_filter(signal, samplerate, highpass_frequency, 'Butterworth')
-
-# Mostrando os resultados
-print("Filtered Signal:", filtered_signal)
-
-# passa baixa
-
-import numpy as np
-from scipy.signal import butter, filtfilt, sosfiltfilt
-
-
-def isoline_correction(signal):
-    offset = np.mean(signal, axis=0)
-    return signal - offset
-
-
-def butter_lowpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    sos = butter(order, normal_cutoff, btype='low', analog=False, output='sos')
-    return sos
-
-
-def lowpass_filter(signal, samplerate, lowpass_frequency, filter_type='Butterworth'):
-    # Verificação e transposição do sinal
-    if signal.ndim == 1:
-        signal = signal.reshape(-1, 1)
-    transposeflag = signal.shape[0] < signal.shape[1]
-    if transposeflag:
-        signal = signal.T
-
-    if filter_type.lower() in ['smooth', 's']:
-        case_var = 1
-    elif filter_type.lower() in ['gauss', 'g']:
-        case_var = 2
-    elif filter_type.lower() in ['butterworth', 'b']:
-        case_var = 3
-    else:
-        raise ValueError('Filter type not recognized')
-
-    if not isinstance(signal, np.double):
-        signal = signal.astype(np.double)
-
-    NCH = signal.shape[1]
-
-    l = int(round(samplerate * 10))
-    filteredsignal = np.pad(signal, ((l, l), (0, 0)), 'constant')
-
-    if lowpass_frequency > samplerate / 2:
-        print('Warning: Lowpass frequency above Nyquist frequency. Nyquist frequency is chosen instead.')
-        lowpass_frequency = np.floor(samplerate / 2 - 1)
-
-    if case_var == 1:
-        nw = round(samplerate / lowpass_frequency)
-        for i in range(NCH):
-            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], np.ones((nw,)) / nw, mode='same')
-    elif case_var == 2:
-        sigmaf = lowpass_frequency
-        sigma = samplerate / (2 * np.pi * sigmaf)
-        length_gauss = 2 * round(4 * sigma) + 1
-        x = np.linspace(-length_gauss // 2, length_gauss // 2, length_gauss)
-        h = np.exp(-(x ** 2) / (2 * sigma ** 2))
-        h = h / np.sum(h)
-        for i in range(NCH):
-            filteredsignal[:, i] = np.convolve(filteredsignal[:, i], h, mode='same')
-    elif case_var == 3:
-        order = 3
-        sos = butter_lowpass(lowpass_frequency, samplerate, order=order)
-        for j in range(NCH):
-            filteredsignal[:, j] = sosfiltfilt(sos, filteredsignal[:, j])
-
-    filteredsignal = filteredsignal[l:-l, :]
-    filteredsignal = isoline_correction(filteredsignal)
-
-    if transposeflag:
-        filteredsignal = filteredsignal.T
-
-    return filteredsignal.squeeze()
-
-
-# Exemplo de uso
-samplerate = 500
-lowpass_frequency = 40
-
-# Sinal sintético de exemplo
-t = np
-
-#chama os dois
-import numpy as np
-from scipy.signal import butter, filtfilt
-
-
-def butter_highpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='high', analog=False)
-    return b, a
-
-
-def butter_lowpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return b, a
-
-
-def highpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_highpass(cutoff, fs, order=order)
-    y = filtfilt(b, a, data)
-    return y
-
-
-def lowpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = filtfilt(b, a, data)
-    return y
-
-
-def ecg_high_low_filter(signal, samplerate, highpass_frequency, lowpass_frequency, filter_type='Butterworth'):
-    if filter_type == 'Butterworth':
-        # Apply highpass filter
-        filtered_signal = highpass_filter(signal, highpass_frequency, samplerate)
-        # Apply lowpass filter
-        filtered_signal = lowpass_filter(filtered_signal, lowpass_frequency, samplerate)
-    else:
-        raise ValueError(f"Filter type {filter_type} not supported. Only 'Butterworth' is implemented.")
-
-    return filtered_signal
-
-
-# Exemplo de uso
-samplerate = 500  # exemplo de taxa de amostragem em Hz
-highpass_frequency = 0.5  # exemplo de frequência de corte passa-alta em Hz
-lowpass_frequency = 40.0  # exemplo de frequência de corte passa-baixa em Hz
-
-# Gerando um sinal ECG sintético para exemplo
-t = np.linspace(0, 10, samplerate * 10)
-signal = np.sin(2 * np.pi * 1 * t)  # sinal sintético de exemplo, substitua pelo seu sinal real
-
-# Chamando a função
-filtered_signal = ecg_high_low_filter(signal, samplerate, highpass_frequency, lowpass_frequency)
-
-# Mostrando os resultados
-print("Filtered Signal:", filtered_signal)
 
 
 # Função para abrir a caixa de diálogo e selecionar o arquivo Excel
@@ -352,8 +248,6 @@ if caminho_do_arquivo:
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
     plt.show()'''
-
-
 
 
     filtered_signal, baseline = ecg_baseline_removal(signal, samplerate,window_length, overlap)
