@@ -102,10 +102,33 @@ def apply_bandpass_filter(signal, samplerate, lowpass_frequency, highpass_freque
     signal = apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels)
     return signal
 
-def isoline_correction(signal):
-    offset = np.mean(signal, axis=0)
-    corrected_signal = signal - offset
-    return corrected_signal, offset
+def isoline_correction(signal, number_bins=None):
+    if signal.ndim == 1:
+        signal = signal[:, np.newaxis]
+
+    # Alocate filtered signal
+    filteredsignal = np.zeros_like(signal)
+    # Number of channels in ECG
+    number_channels = signal.shape[1]
+
+    # Check for optional input
+    if number_bins is None:
+        number_bins = min(2**10, signal.shape[0])  # default number of bins for histogram
+
+    # Alocate matrix for histogram frequencies
+    frequency_matrix = np.zeros((number_bins, number_channels))
+    # Alocate matrix for bin centers
+    bins_matrix = np.zeros_like(frequency_matrix)
+    offset = np.zeros(number_channels)
+
+    # Constant offset removal
+    for i in range(number_channels):
+        frequency_matrix[:, i], bin_edges = np.histogram(signal[:, i], bins=number_bins)
+        pos = np.argmax(frequency_matrix[:, i])  # find maximum of histogram
+        offset[i] = (bin_edges[pos] + bin_edges[pos + 1]) / 2  # find most frequent amplitude in the ECG signal
+        filteredsignal[:, i] = signal[:, i] - offset[i]  # remove offset
+
+    return filteredsignal, offset
 
 def smooth(signal, window_len):
     s = np.r_[signal[window_len - 1:0:-1], signal, signal[-2:-window_len - 1:-1]]
@@ -147,7 +170,8 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         baseline[:, j] = interpolator(np.arange(L))
         filtered_signal[:, j] = signal[:, j] - baseline[:, j]
 
-        filtered_signal[:, j], offset = isoline_correction(filtered_signal[:, j])
+        corrected_signal, offset = isoline_correction(filtered_signal[:, j][:, np.newaxis])
+        filtered_signal[:, j] = corrected_signal.flatten()
         baseline[:, j] += offset
         filtered_signal[:, j] += 0.1
 
@@ -192,8 +216,19 @@ if caminho_do_arquivo:
     '''plt.plot(final_filtered_signal2[1:2000])
     plt.title('Filtered ECG Signal')
     plt.xlabel('Time in ms')
+    plt.ylabel('Voltage in mV') 
+    plt.show()'''
+
+    # Apply isoline correction to final_filtered_signal2
+    corrected_final_filtered_signal2, _ = isoline_correction(final_filtered_signal2)
+
+    # Plot the isoline-corrected final_filtered_signal2
+    '''plt.plot(corrected_final_filtered_signal2[1:2000])
+    plt.title('Isoline-Corrected Filtered ECG Signal')
+    plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
     plt.show()'''
+
 
 else:
     print("Nenhum arquivo foi selecionado.")
