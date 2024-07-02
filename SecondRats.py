@@ -173,7 +173,7 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         corrected_signal, offset = isoline_correction(filtered_signal[:, j][:, np.newaxis])
         filtered_signal[:, j] = corrected_signal.flatten()
         baseline[:, j] += offset
-        filtered_signal[:, j] += 0.05
+        filtered_signal[:, j] += 0.1
 
     '''plt.plot(filtered_signal[1:2000])
     plt.title('Baseline Removal')
@@ -188,7 +188,7 @@ def selecionar_arquivo():
     arquivo_selecionado = askopenfilename(
         title="Selecione o arquivo Excel",
         filetypes=[("Arquivo Excel", "*.xlsx *.xls")]
-
+        
     )
     return arquivo_selecionado
 
@@ -211,7 +211,7 @@ if caminho_do_arquivo:
 
     # Then, pass the baseline-corrected signal through the bandpass filter
     final_filtered_signal = ecg_filter(filtered_signal, samplerate, 'band', lowpass_frequency, highpass_frequency, 'Butterworth')
-    final_filtered_signal2 = final_filtered_signal #+ 0.05
+    final_filtered_signal2 = final_filtered_signal + 0.05
 
     # Plot the final filtered signal
     '''plt.plot(final_filtered_signal2[1:2000])
