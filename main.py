@@ -200,11 +200,11 @@ if caminho_do_arquivo:
     matriz_uma_coluna = [cell.value for cell in sheet['A']]
     signal = np.array(matriz_uma_coluna)
 
-    '''plt.plot(signal[1:2000])
+    plt.plot(signal[1:2000])
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()'''
+    plt.show()
 
     # First, perform baseline removal
     filtered_signal, baseline = ecg_baseline_removal(signal, samplerate, window_length, overlap)
