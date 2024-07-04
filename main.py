@@ -55,6 +55,8 @@ def ecg_filter(signal, samplerate, filter_type, lowpass_frequency=None, highpass
         filteredsignal = apply_lowpass_filter(filteredsignal, samplerate, lowpass_frequency, case_var, n_channels)
     elif filter_type == 'high':
         filteredsignal = apply_highpass_filter(filteredsignal, samplerate, highpass_frequency, case_var, n_channels)
+    elif filter_type == 'notch':
+        filteredsignal = apply_notch_filter(filteredsignal, samplerate, highpass_frequency, case_var, n_channels)
     elif filter_type == 'band':
         if lowpass_frequency is None or highpass_frequency is None:
             raise ValueError('Both lowpass_frequency and highpass_frequency must be specified for bandpass filter.')
@@ -88,6 +90,18 @@ def apply_lowpass_filter(signal, samplerate, lowpass_frequency, case_var, n_chan
     return signal
 
 def apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels):
+    if case_var == 3:  # Butterworth filter
+        order = 3
+        sos = butter(order, 2 * highpass_frequency / samplerate, btype='high', output='sos')
+        for i in range(n_channels):
+            signal[:, i] = sosfiltfilt(sos, signal[:, i])
+    else:
+        raise NotImplementedError("High-pass filter is only implemented for Butterworth filter.")
+    return signal
+
+def apply_notch_filter(signal, samplerate, highpass_frequency, case_var, n_channels):
+    #COLOCAR AQUI O FILTRO NOTCH E FAZER POR CADA UM DELES POR VEZ E DEPOIS PLOT#####
+
     if case_var == 3:  # Butterworth filter
         order = 3
         sos = butter(order, 2 * highpass_frequency / samplerate, btype='high', output='sos')
