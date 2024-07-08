@@ -236,9 +236,10 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         filtered_signal[:, j] += 0.05
 
     plt.figure(figsize=(14, 7))
-    plt.plot(signal[1:2000], label='Filtered Signal', color='blue')
-    plt.plot(baseline[1:2000], label='Baseline', color='red')
-    plt.title('Estimated baseline')
+    plt.plot(signal[1:2000], label='Signal', color='blue')
+    plt.plot(baseline[1:2000], label='Estimated baseline', color='red')
+    plt.legend()
+    plt.title('Input signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
     plt.show()
@@ -290,11 +291,11 @@ if caminho_do_arquivo:
     final_filtered_signal2 = final_filtered_signal  # + 0.05
 
     # Plot the final filtered signal
-    plt.plot(final_filtered_signal2[1:2000])
+    '''plt.plot(final_filtered_signal2[1:2000])
     plt.title('Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     # Apply isoline correction to final_filtered_signal2
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
@@ -311,7 +312,7 @@ if caminho_do_arquivo:
     plt.plot(corrected_final_filtered_signal2[1:2000], label='Filtered Signal', color='red', alpha=0.75)
     # plt.axhline(y=offset, color='green', linestyle='--', label='Offset')
     plt.legend()
-    plt.title('Signal, Filtered Signal, and Offset')
+    plt.title('Signal and Filtered Signal')
     plt.xlabel('Sample')
     plt.ylabel('Amplitude')
     plt.show()
