@@ -265,6 +265,7 @@ if caminho_do_arquivo:
     matriz_uma_coluna = [cell.value for cell in sheet['A']]
     signal = np.array(matriz_uma_coluna)
 
+    plt.figure(figsize=(12, 6))
     plt.plot(signal[1:2000])
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
@@ -285,6 +286,7 @@ if caminho_do_arquivo:
     
 
     # Plot the final filtered signal
+    plt.figure(figsize=(12, 6))
     plt.plot(final_filtered_signal2[1:2000])
     plt.title('Filtered ECG Signal')
     plt.xlabel('Time in ms')
@@ -295,6 +297,7 @@ if caminho_do_arquivo:
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
 
     # Plot the isoline-corrected final_filtered_signal2
+    plt.figure(figsize=(12, 6))
     plt.plot(corrected_final_filtered_signal2[1:2000])
     plt.title('Isoline-Corrected Filtered ECG Signal')
     plt.xlabel('Time in ms')
