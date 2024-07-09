@@ -11,7 +11,7 @@ from scipy.signal import butter, sosfiltfilt
 
 
 # Define constants for filtering
-lowpass_frequency = 150
+lowpass_frequency = 200
 highpass_frequency = 0.5
 notch_frequency = 50
 samplerate = 1000
@@ -67,14 +67,14 @@ def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpas
     filteredsignal, offset = isoline_correction(filteredsignal)
 
     
-    plt.figure(figsize=(12, 6))
+    '''plt.figure(figsize=(12, 6))
     plt.plot(filteredsignal[1:2000], label='Filtered Signal', color='blue', alpha=0.75)
     plt.axhline(y=offset, color='green', linestyle='--', label='Estimated Isoline')
     plt.legend()
     plt.title('High/Low-pass filtered signal')
     plt.xlabel('Sample')
     plt.ylabel('Amplitude')
-    plt.show()
+    plt.show()'''
 
     if transpose_flag:
         filteredsignal = filteredsignal.T
@@ -230,21 +230,21 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         baseline[:, j] += offset
         filtered_signal[:, j] += 0.05
 
-    plt.figure(figsize=(14, 7))
+    '''plt.figure(figsize=(14, 7))
     plt.plot(signal[1:2000], label='Signal', color='blue')
     plt.plot(baseline[1:2000], label='Estimated baseline', color='red')
     plt.legend()
     plt.title('Input signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
-    plt.figure(figsize=(14, 7))
-    plt.plot(filtered_signal[1:2000])
+    '''plt.figure(figsize=(14, 7))
+    plt.plot(filtered_signal[1:450])
     plt.title('Baseline Removal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     return filtered_signal, baseline
 
@@ -266,7 +266,7 @@ if caminho_do_arquivo:
     signal = np.array(matriz_uma_coluna)
 
     plt.figure(figsize=(12, 6))
-    plt.plot(signal[1:2000])
+    plt.plot(signal[1:450])
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
@@ -286,19 +286,19 @@ if caminho_do_arquivo:
     
 
     # Plot the final filtered signal
-    plt.figure(figsize=(12, 6))
+    '''plt.figure(figsize=(12, 6))
     plt.plot(final_filtered_signal2[1:2000])
     plt.title('Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV') 
-    plt.show()
+    plt.show()'''
 
     # Apply isoline correction to final_filtered_signal2
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
 
     # Plot the isoline-corrected final_filtered_signal2
     plt.figure(figsize=(12, 6))
-    plt.plot(corrected_final_filtered_signal2[1:2000])
+    plt.plot(corrected_final_filtered_signal2[1:450])
     plt.title('Isoline-Corrected Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
