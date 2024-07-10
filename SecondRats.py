@@ -11,7 +11,7 @@ from scipy.signal import butter, sosfiltfilt
 
 
 # Define constants for filtering
-lowpass_frequency = 200
+lowpass_frequency = 100
 highpass_frequency = 0.5
 notch_frequency = 50
 samplerate = 1000
@@ -305,8 +305,8 @@ if caminho_do_arquivo:
     plt.show()
 
     plt.figure(figsize=(12, 6))
-    plt.plot(signal[1:2000], label='Original Signal', color='blue', alpha=0.5)
-    plt.plot(corrected_final_filtered_signal2[1:2000], label='Filtered Signal', color='red', alpha=0.75)
+    plt.plot(signal[1:450], label='Original Signal', color='blue', alpha=0.5)
+    plt.plot(corrected_final_filtered_signal2[1:450], label='Filtered Signal', color='red', alpha=0.75)
     #plt.axhline(y=offset, color='green', linestyle='--', label='Offset')
     plt.legend()
     plt.title('Signal and Filtered Signal')

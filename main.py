@@ -10,8 +10,8 @@ from scipy.interpolate import PchipInterpolator
 from scipy.signal import butter, sosfiltfilt
 
 # Define constants for filtering
-lowpass_frequency = 150 #150
-highpass_frequency = 0.5 #1
+lowpass_frequency = 20 #150  40  Pq diminuir isso deixa mais limpo
+highpass_frequency = 0.5 #0.5
 notch_frequency = 50
 samplerate = 1000
 window_length = 1 #15
