@@ -10,7 +10,7 @@ from scipy.interpolate import PchipInterpolator
 from scipy.signal import butter, sosfiltfilt
 
 # Define constants for filtering
-lowpass_frequency = 20 #150  40  Pq diminuir isso deixa mais limpo
+lowpass_frequency = 150 #150  40  Pq diminuir isso deixa mais limpo
 highpass_frequency = 0.5 #0.5
 notch_frequency = 50
 samplerate = 1000
@@ -19,6 +19,11 @@ overlap = 0.5
 width = 1
 
 
+
+#ENCONTRAR OS PICOS
+
+
+#PREPROCESSAMENTO
 def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpass_frequency=None, notch_frequency=None,
                filter_method='Butterworth'):
     if signal.ndim == 1:
@@ -68,14 +73,14 @@ def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpas
     filteredsignal = filteredsignal[l:-l, :]
     filteredsignal, offset = isoline_correction(filteredsignal)
 
-    plt.figure(figsize=(12, 6))
+    '''plt.figure(figsize=(12, 6))
     plt.plot(filteredsignal[1:2000], label='Filtered Signal', color='blue', alpha=0.75)
     plt.axhline(y=offset, color='green', linestyle='--', label='Estimated Isoline')
     plt.legend()
     plt.title('High/Low-pass filtered signal')
     plt.xlabel('Sample')
     plt.ylabel('Amplitude')
-    plt.show()
+    plt.show()'''
 
     if transpose_flag:
         filteredsignal = filteredsignal.T
@@ -235,21 +240,21 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         baseline[:, j] += offset
         filtered_signal[:, j] += 0.05
 
-    plt.figure(figsize=(14, 7))
+    '''plt.figure(figsize=(14, 7))
     plt.plot(signal[1:2000], label='Signal', color='blue')
     plt.plot(baseline[1:2000], label='Estimated baseline', color='red')
     plt.legend()
     plt.title('Input signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
-    plt.figure(figsize=(14, 7))
+    '''plt.figure(figsize=(14, 7))
     plt.plot(filtered_signal[1:2000])
     plt.title('Baseline Removal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     return filtered_signal, baseline
 
@@ -272,11 +277,11 @@ if caminho_do_arquivo:
     matriz_uma_coluna = [cell.value for cell in sheet['A']]
     signal = np.array(matriz_uma_coluna)
 
-    plt.plot(signal[1:2000])
+    '''plt.plot(signal[1:2000])
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     # First, perform baseline removal
     filtered_signal, baseline = ecg_baseline_removal(signal, samplerate, window_length, overlap)
@@ -301,11 +306,11 @@ if caminho_do_arquivo:
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
 
     # Plot the isoline-corrected final_filtered_signal2
-    plt.plot(corrected_final_filtered_signal2[1:2000])
+    '''plt.plot(corrected_final_filtered_signal2[1:2000])
     plt.title('Isoline-Corrected Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     plt.figure(figsize=(12, 6))
     plt.plot(signal[1:2000], label='Original Signal', color='blue', alpha=0.5)
@@ -330,47 +335,7 @@ else:
         # Generate simulated ECG data
         fs = 140  # Distance RR
         duration = 5  # Seconds
-        t, simulated_ecg = generate_simulated_ecg(self, fs, duration)
-
-        # simulated_ecg = nk.ecg_simulate(duration:=60, sampling_rate:=500, heart_rate:=70)
-
-        # Find R-peaks
-        peaks, _ = find_peaks(simulated_ecg, distance=100, height=0.5)
-
-        # Plot the ECG signal with detected R-peaks
-        plt.figure(figsize=(12, 4))
-        plt.plot(simulated_ecg)
-        plt.plot(peaks, simulated_ecg[peaks], "x", color='red', markersize=10)
-        plt.title('Simulated ECG Signal with R-peaks Detected')
-        plt.xlabel('Sample milisec')
-        plt.ylabel('Amplitude')
-        plt.grid(True)
-        plt.show()
-
-        # Print the indices of detected R-peaks
-        print("Indices of R-peaks:", peaks)
-
-
-        # Save ECG data and R-peak indices to an Excel file
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-
-        # Add headers
-        sheet["A1"] = "Time (s)"
-        sheet["B1"] = "ECG Signal"
-        sheet["C1"] = "R-peak Indices"
-
-        # Add ECG signal and time
-        for i, (time, ecg_value) in enumerate(zip(t, simulated_ecg), start=2):
-            sheet.cell(row=i, column=1, value=time)
-            sheet.cell(row=i, column=2, value=ecg_value)
-
-        # Add R-peak indices
-        for i, peak in enumerate(peaks, start=2):
-            sheet.cell(row=i, column=3, value=peak)
-
-        workbook.save("test_ECG_One.xlsx")
-        print("Excel file created :)")
+  
 
 class WindowManager(ScreenManager): #Cria a janela
     pass
