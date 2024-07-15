@@ -328,108 +328,70 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
         signal = decimate(filtered_signal3, r)
         samplerate = samplerate / r
 
-    # Perform wavelet transform using the 'db4' wavelet
-    wavelet = 'db4'  #db4  haar
-    waveletTes = 'haar'
+    # Perform wavelet transform using the 'haar' wavelet
+    wavelet = 'haar'
 
     coeffs = pywt.wavedec(signal, wavelet, level=6)
     cA6, cD6, cD5, cD4, cD3, cD2, cD1 = coeffs  # cD3-start P // cD2-end S // cD1-peak S // cD4-start P
 
     # Reconstruct the signal from wavelet coefficients
-    reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)  # Wave S  cd1 1
-    reconstructed_signalSend = pywt.upcoef('d', cD2, wavelet, level=2)  # End of wave S cd2 2
-    reconstructed_signalTest = pywt.upcoef('d', cD1, waveletTes, level=1)  # test
-
+    reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)  # test
 
     # Absolute value to emphasize the peaks
     reconstructed_signal = np.abs(reconstructed_signal)
-    reconstructed_signalSend = np.abs(reconstructed_signalSend)
-    reconstructed_signalTest = np.abs(reconstructed_signalTest) #TEST
 
-    # Find S peaks using distance
+    # Find R peaks using distance
     # distance = int(samplerate * 0.6)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
     # print(distance) 300
 
-    # PARA O PICO S
     amplitude_mean = np.mean(reconstructed_signal)
     amplitude_mean2 = amplitude_mean * 10000
+
     amplitude_std = np.std(reconstructed_signal)
     amplitude_std2 = amplitude_std * 10000
 
-    distance = int(
-        amplitude_mean2 + 5 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-    # print(distance) 143
+    distance = int(amplitude_mean2 + 1 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
 
-    peaksS, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
-    peaksR = peaksS - 8  # Para estimar o R
-
-    # PARA O OFFSET S
-    amplitude_meanSend = np.mean(reconstructed_signalSend)
-    amplitude_mean2Send = amplitude_meanSend * 10000
-    amplitude_stdSend = np.std(reconstructed_signalSend)
-    amplitude_std2Send = amplitude_stdSend * 10000
-    distanceSend = int(amplitude_mean2Send + 5 * amplitude_std2Send)
-    peaksSend, _ = find_peaks(reconstructed_signalSend, distance=distanceSend, height=np.mean(reconstructed_signalSend))
-
-    #PARA O TESTE HAAR ####################
-    amplitude_meanTest = np.mean(reconstructed_signalTest)
-    amplitude_mean2Test = amplitude_meanTest * 100000
-
-    amplitude_stdTest = np.std(reconstructed_signalTest)
-    amplitude_std2Test = amplitude_stdTest * 100000
-
-    distance = int(amplitude_mean2Test + 5 * amplitude_std2Test)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-
-    peaksTes, _ = find_peaks(reconstructed_signalTest, distance=distance, height=np.mean(reconstructed_signalTest))
-
+    peaks, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
+    peaksR = peaks - 6
 
 
     plt.figure(figsize=(12, 6))
 
-    plt.subplot(4, 1, 1)
+    plt.subplot(3, 1, 1)
     plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
-    plt.plot(peaksTes[:7], signal[peaksTes[:7]], 'ro', label='R Peaks')
-    #plt.plot(peaksTest[:7], signal[peaksTest[:7]], 'go', label='P Peaks')
+    plt.plot(peaksR[:7], signal[peaksR[:7]], 'ro', label='R Peaks') # bo  ro go
+    plt.plot(peaks[:7], signal[peaks[:7]], 'go', label='P Peaks')
     plt.legend()
 
-    plt.subplot(4, 1, 2)
-    plt.plot(reconstructed_signalTest[1:2000], label='Approximation Coefficients', color='green')
-    plt.plot(peaksTes[:7], reconstructed_signalTest[peaksTes[:7]], 'ro', label='P Peaks')  # Plot first 5 peaks for demonstration
-    plt.legend()
-
-    plt.subplot(4, 1, 3)
+    plt.subplot(3, 1, 2)
     plt.plot(reconstructed_signal[1:2000], label='Approximation Coefficients', color='green')
-    plt.plot(peaksS[:8], reconstructed_signal[peaksS[:8]], 'ro',
-             label='S Peaks')  # Plot first 5 S peaks for demonstration
-    plt.plot(peaksR[:8], reconstructed_signal[peaksR[:8]], 'go',
-             label='R Peaks')  # Plot first 5 R peaks for demonstration
-    plt.plot(peaksSend[:3], reconstructed_signal[peaksSend[:3]], 'bo',
-             label='OffS Peaks')  # Plot first 5 peaks for demonstration
+    plt.plot(peaksR[:7], reconstructed_signal[peaksR[:7]], 'ro', label='R Peaks')  # bo  ro go
+    plt.plot(peaks[:7], reconstructed_signal[peaks[:7]], 'go', label='P Peaks')
     plt.legend()
 
-    plt.subplot(4, 1, 4)
-    plt.plot(signal[1:2000], label='Approximation Coefficients', color='green')
-    plt.plot(peaksS[:8], signal[peaksS[:8]], 'ro', label='S Peaks')  # Plot first 5 S peaks for demonstration
-    plt.plot(peaksR[:8], signal[peaksR[:8]], 'go', label='R Peaks')  # Plot first 5 peaks for demonstration
-    plt.plot(peaksSend[:3], signal[peaksSend[:3]], 'bo', label='OffS Peaks')  # Plot first 5 peaks for demonstration
+
+    plt.subplot(3, 1, 3)
+    plt.plot(signal[1:4000], label='Approximation Coefficients', color='green')
     plt.legend()
 
     plt.tight_layout()
     plt.show()
 
     # Placeholder for FPT and further processing
-    value_S = {'S Peaks': peaksS}  # Todos os valores dos picos aqui
+    #value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
     value_R = {'R Peaks': peaksR}  # Todos os valores dos picos aqui
 
     print(value_R)
 
-    FPT_S = len(value_S['S Peaks'])
+
+    #FPT_S = len(value_S['S Peaks'])
     FPT_R = len(value_R['R Peaks'])
 
     if not mute:
         print('Done')
 
-    return FPT_S, FPT_R
+    return FPT_R
 
 
 ##########
@@ -498,9 +460,9 @@ if caminho_do_arquivo:
     plt.show()'''
 
     # Perform QRS detection
-    FPT_S, FPT_R = QRS_Detection(signal, samplerate, peaksQRS=True, mute=True)
+    FPT_R = QRS_Detection(signal, samplerate, peaksQRS=True, mute=True)
 
-    print(f"Total number of S peaks: {FPT_S}")
+    #print(f"Total number of S peaks: {FPT_S}")
     print(f"Total number of R peaks: {FPT_R}")
 
 else:
