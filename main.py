@@ -326,7 +326,7 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     if samplerate > fdownsample:
         r = int(np.floor(samplerate / fdownsample))
         signal = decimate(filtered_signal3, r)
-        samplerate = samplerate / r
+        samplerate = samplerate / r #500
 
     # Perform wavelet transform using the 'haar' wavelet
     wavelet = 'haar'
@@ -359,20 +359,19 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     plt.figure(figsize=(12, 6))
 
     plt.subplot(3, 1, 1)
-    plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
-    plt.plot(peaksR[:7], signal[peaksR[:7]], 'ro', label='R Peaks') # bo  ro go
-    plt.plot(peaks[:7], signal[peaks[:7]], 'go', label='P Peaks')
+    plt.plot(signal[1:5000], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaksR[:17], signal[peaksR[:17]], 'ro', label='R Peaks') # bo  ro go
     plt.legend()
 
     plt.subplot(3, 1, 2)
-    plt.plot(reconstructed_signal[1:2000], label='Approximation Coefficients', color='green')
-    plt.plot(peaksR[:7], reconstructed_signal[peaksR[:7]], 'ro', label='R Peaks')  # bo  ro go
-    plt.plot(peaks[:7], reconstructed_signal[peaks[:7]], 'go', label='P Peaks')
+    plt.plot(reconstructed_signal[1:5000], label='Wavelet Haar', color='green')
+    plt.plot(peaks[:17], reconstructed_signal[peaks[:17]], 'bo', label='R Peaks')
     plt.legend()
 
 
     plt.subplot(3, 1, 3)
-    plt.plot(signal[1:4000], label='Approximation Coefficients', color='green')
+    plt.plot(signal, label='Approximation Coefficients', color='green')
+    plt.plot(peaksR, signal[peaksR], 'ro', label='R Peaks')
     plt.legend()
 
     plt.tight_layout()
@@ -382,7 +381,23 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     #value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
     value_R = {'R Peaks': peaksR}  # Todos os valores dos picos aqui
 
-    print(value_R)
+    # Calculate heart rate ERRADO
+    samplerate = samplerate * 2
+    duration = len(signal) / samplerate
+    print(duration)
+    heart_rate = (len(peaksR) / duration) * 60
+    print(heart_rate)
+
+    # Calculate HRV
+    rr_intervals = np.diff(peaksR) / samplerate
+    mean_rr = np.mean(rr_intervals)
+    sdnn = np.std(rr_intervals)
+
+    print(mean_rr)
+    print(sdnn)
+
+    #return heart_rate, mean_rr, sdnn
+
 
 
     #FPT_S = len(value_S['S Peaks'])

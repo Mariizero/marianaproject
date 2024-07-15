@@ -1,4 +1,5 @@
-## Program to creat ECG RATS##
+## Program to creat ECG ##
+
 
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
@@ -8,7 +9,12 @@ from tkinter.filedialog import askopenfilename
 from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import PchipInterpolator
 from scipy.signal import butter, sosfiltfilt
-
+import scipy.signal as signal
+from scipy.signal import decimate
+from scipy.io import loadmat
+from scipy.signal import find_peaks
+from scipy.stats import scoreatpercentile
+import pywt
 
 # Define constants for filtering
 lowpass_frequency = 100
@@ -19,7 +25,9 @@ window_length = 1
 overlap = 0.5
 width = 1
 
-def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpass_frequency=None, notch_frequency=None, filter_method='Butterworth'):
+
+def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpass_frequency=None, notch_frequency=None,
+               filter_method='Butterworth'):
     if signal.ndim == 1:
         signal = signal[:, np.newaxis]
     if signal.shape[1] > signal.shape[0]:
@@ -59,14 +67,14 @@ def ecg_filter(signal, samplerate, filter_types, lowpass_frequency=None, highpas
         elif filter_type == 'band':
             if lowpass_frequency is None or highpass_frequency is None:
                 raise ValueError('Both lowpass_frequency and highpass_frequency must be specified for bandpass filter.')
-            filteredsignal = apply_bandpass_filter(filteredsignal, samplerate, lowpass_frequency, highpass_frequency, case_var, n_channels)
+            filteredsignal = apply_bandpass_filter(filteredsignal, samplerate, lowpass_frequency, highpass_frequency,
+                                                   case_var, n_channels)
         else:
             raise ValueError('Filter type not recognized')
 
     filteredsignal = filteredsignal[l:-l, :]
     filteredsignal, offset = isoline_correction(filteredsignal)
 
-    
     '''plt.figure(figsize=(12, 6))
     plt.plot(filteredsignal[1:2000], label='Filtered Signal', color='blue', alpha=0.75)
     plt.axhline(y=offset, color='green', linestyle='--', label='Estimated Isoline')
@@ -96,8 +104,9 @@ def apply_lowpass_filter(signal, samplerate, lowpass_frequency, case_var, n_chan
         sos = butter(order, 2 * lowpass_frequency / samplerate, btype='low', output='sos')
         for i in range(n_channels):
             signal[:, i] = sosfiltfilt(sos, signal[:, i])
-            #print("Filtro 1 foi")
+            # print("Filtro 1 foi")
     return signal
+
 
 def apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels):
     if case_var == 3:  # Butterworth filter
@@ -105,15 +114,16 @@ def apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_ch
         sos = butter(order, 2 * highpass_frequency / samplerate, btype='high', output='sos')
         for i in range(n_channels):
             signal[:, i] = sosfiltfilt(sos, signal[:, i])
-            #print("Filtro 2 foi")
+            # print("Filtro 2 foi")
     else:
         raise NotImplementedError("High-pass filter is only implemented for Butterworth filter.")
     return signal
 
+
 def apply_notch_filter(signal, samplerate, notch_frequency, width):
-    # The spectrum will have peaks at k*f0Hz. K gives the greatest number n 
-    # that can be chosen for a harmonic oscillation without going beyond the 
-    # Nyquist frequency 
+    # The spectrum will have peaks at k*f0Hz. K gives the greatest number n
+    # that can be chosen for a harmonic oscillation without going beyond the
+    # Nyquist frequency
     K = int(np.floor(samplerate / 2 / notch_frequency))
 
     # Extend signal to avoid boundary effects
@@ -121,13 +131,13 @@ def apply_notch_filter(signal, samplerate, notch_frequency, width):
     signal_extended = np.pad(signal, ((extpoints, extpoints), (0, 0)), 'symmetric')
 
     L = signal_extended.shape[0]  # Length of the signal
-    f = np.fft.fftfreq(L, d=1/samplerate)  # Frequency vector
+    f = np.fft.fftfreq(L, d=1 / samplerate)  # Frequency vector
 
     sigmaf = width  # Standard deviation of Gaussian bell used to select frequency
     sigma = int(np.ceil(L * sigmaf / samplerate))  # Sigma discrete
     lg = 2 * round(4 * sigma) + 1  # Size of Gaussian bell
     lb = (lg - 1) // 2  # Position of center of Gaussian bell
-    
+
     # Gaussian bell creation
     g = gaussian_filter1d(np.eye(1, lg).flatten(), sigma)
     g = 1 / (np.max(g) - np.min(g)) * (np.max(g) - g)  # Scale Gaussian bell to be in interval [0;1]
@@ -135,26 +145,27 @@ def apply_notch_filter(signal, samplerate, notch_frequency, width):
     H = np.ones(L)  # Filter
 
     # Implementation of periodical Gaussian bells at k*f0Hz
-    for k in range(1, K+1):
+    for k in range(1, K + 1):
         b = np.argmin(np.abs(f - k * notch_frequency))  # Discrete position at which f = k*f0Hz
-        H[b-lb:b+lb+1] = g  # Gaussian bell placed around k*f0Hz
-        H[L-b-lb:L-b+lb+1] = g  # Gaussian bell placed symmetrically around samplerate - k*f0Hz
+        H[b - lb:b + lb + 1] = g  # Gaussian bell placed around k*f0Hz
+        H[L - b - lb:L - b + lb + 1] = g  # Gaussian bell placed symmetrically around samplerate - k*f0Hz
 
     H = np.tile(H, (signal_extended.shape[1], 1)).T  # Reproduce the filter for all channels
     X = np.fft.fft(signal_extended, axis=0)  # FFT of signal
     Y = H * X  # Filtering process in the Fourier Domain
     signal = np.real(np.fft.ifft(Y, axis=0))  # Reconstruction of filtered signal
     signal = signal[extpoints:-extpoints, :]  # Remove extended portions
-    #print("Filtro 3 foi")
-    
+    # print("Filtro 3 foi")
+
     return signal
 
 
 def apply_bandpass_filter(signal, samplerate, lowpass_frequency, highpass_frequency, case_var, n_channels):
     signal = apply_lowpass_filter(signal, samplerate, lowpass_frequency, case_var, n_channels)
     signal = apply_highpass_filter(signal, samplerate, highpass_frequency, case_var, n_channels)
-    #print("Filtro 4 foi")
+    # print("Filtro 4 foi")
     return signal
+
 
 def isoline_correction(signal, number_bins=None):
     if signal.ndim == 1:
@@ -167,14 +178,13 @@ def isoline_correction(signal, number_bins=None):
 
     # Check for optional input
     if number_bins is None:
-        number_bins = min(2**10, signal.shape[0])  # default number of bins for histogram
+        number_bins = min(2 ** 10, signal.shape[0])  # default number of bins for histogram
 
     # Alocate matrix for histogram frequencies
     frequency_matrix = np.zeros((number_bins, number_channels))
     # Alocate matrix for bin centers
     bins_matrix = np.zeros_like(frequency_matrix)
     offset = np.zeros(number_channels)
-    
 
     # Constant offset removal
     for i in range(number_channels):
@@ -185,11 +195,13 @@ def isoline_correction(signal, number_bins=None):
 
     return filteredsignal, offset
 
+
 def smooth(signal, window_len):
     s = np.r_[signal[window_len - 1:0:-1], signal, signal[-2:-window_len - 1:-1]]
     w = np.hanning(window_len)
     y = np.convolve(w / w.sum(), s, mode='valid')
     return y[int(window_len / 2 - 1):-int(window_len / 2)]
+
 
 def ecg_baseline_removal(signal, samplerate, window_length, overlap):
     L = signal.shape[0]
@@ -231,22 +243,170 @@ def ecg_baseline_removal(signal, samplerate, window_length, overlap):
         filtered_signal[:, j] += 0.05
 
     '''plt.figure(figsize=(14, 7))
-    plt.plot(signal[1:2000], label='Signal', color='blue')
-    plt.plot(baseline[1:2000], label='Estimated baseline', color='red')
-    plt.legend()
-    plt.title('Input signal')
+    plt.plot(signal[1:2000], label='Filtered Signal', color='blue')
+    plt.plot(baseline[1:2000], label='Baseline', color='red')
+    plt.title('Estimated baseline')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()'''
+    plt.show()
 
-    '''plt.figure(figsize=(14, 7))
-    plt.plot(filtered_signal[1:450])
+
+    plt.figure(figsize=(14, 7))
+    plt.plot(filtered_signal[1:2000])
     plt.title('Baseline Removal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
     plt.show()'''
 
     return filtered_signal, baseline
+
+
+# ENCONTRAR O PICO R AQUI
+def butter_highpass_filter(signal, samplerate, highpass_frequency):
+    order = 3
+    n_channels = 1
+    sos = butter(order, 2 * highpass_frequency / samplerate, btype='high', output='sos')
+
+    if n_channels == 1:
+        # Single-channel case
+        filtered_signal3 = sosfiltfilt(sos, signal)
+    else:
+        # Multi-channel case
+        filtered_signal3 = np.zeros_like(signal)
+        for i in range(n_channels):
+            filtered_signal3[:, i] = sosfiltfilt(sos, signal[:, i])
+
+    return filtered_signal3
+
+
+def butter_lowpass_filter(signal, samplerate, lowpass_frequency):
+    order = 3
+    n_channels = 1
+    sos = butter(order, 2 * lowpass_frequency / samplerate, btype='low', output='sos')
+
+    if n_channels == 1:
+        # Single-channel case
+        filtered_signal3 = sosfiltfilt(sos, signal)
+    else:
+        # Multi-channel case
+        filtered_signal3 = np.zeros_like(signal)
+        for i in range(n_channels):
+            filtered_signal3[:, i] = sosfiltfilt(sos, signal[:, i])
+
+    return filtered_signal3
+
+
+def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
+    # Initialization
+    flag_posR = peaksQRS
+    if not mute:
+        print('Detecting R Peaks...')
+
+    # Ensure signal is numpy array of type float64
+    signal = np.asarray(corrected_final_filtered_signal2, dtype=np.float64).flatten()
+
+    # Check if signal is a vector
+    if signal.ndim != 1:
+        raise ValueError('The input ECG signal must be a vector!')
+
+    # Check for small signal values
+    if np.all(np.abs(signal) < np.finfo(float).eps):
+        if not mute:
+            print('The signal values are too small to process. Returning empty FPT table')
+        return None
+
+    # Denoise ECG: Highpass and Lowpass filtering
+    highpass_frequency = 0.5
+    lowpass_frequency = 30
+    filtered_signal3 = butter_highpass_filter(signal, samplerate, highpass_frequency)
+    filtered_signal3 = butter_lowpass_filter(filtered_signal3, samplerate, lowpass_frequency)
+
+    # Downsampling if necessary
+    fdownsample = 400
+    if samplerate > fdownsample:
+        r = int(np.floor(samplerate / fdownsample))
+        signal = decimate(filtered_signal3, r)
+        samplerate = samplerate / r  # 500
+
+    # Perform wavelet transform using the 'haar' wavelet
+    wavelet = 'haar'
+
+    coeffs = pywt.wavedec(signal, wavelet, level=6)
+    cA6, cD6, cD5, cD4, cD3, cD2, cD1 = coeffs  # cD3-start P // cD2-end S // cD1-peak S // cD4-start P
+
+    # Reconstruct the signal from wavelet coefficients
+    reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)  # test
+
+    # Absolute value to emphasize the peaks
+    reconstructed_signal = np.abs(reconstructed_signal)
+
+    # Find R peaks using distance
+    # distance = int(samplerate * 0.6)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
+    # print(distance) 300
+
+    amplitude_mean = np.mean(reconstructed_signal)
+    amplitude_mean2 = amplitude_mean * 10000
+
+    amplitude_std = np.std(reconstructed_signal)
+    amplitude_std2 = amplitude_std * 10000
+
+    distance = int(
+        amplitude_mean2 + 1 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
+
+    peaks, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
+    peaksR = peaks - 6
+
+    plt.figure(figsize=(12, 6))
+
+    plt.subplot(3, 1, 1)
+    plt.plot(signal[1:5000], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaksR[:17], signal[peaksR[:17]], 'ro', label='R Peaks')  # bo  ro go
+    plt.legend()
+
+    plt.subplot(3, 1, 2)
+    plt.plot(reconstructed_signal[1:5000], label='Wavelet Haar', color='green')
+    plt.plot(peaks[:17], reconstructed_signal[peaks[:17]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(3, 1, 3)
+    plt.plot(signal, label='Approximation Coefficients', color='green')
+    plt.plot(peaksR, signal[peaksR], 'ro', label='R Peaks')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    # Placeholder for FPT and further processing
+    # value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
+    value_R = {'R Peaks': peaksR}  # Todos os valores dos picos aqui
+
+    # Calculate heart rate
+    samplerate = samplerate * 2
+    duration = len(signal) / samplerate
+    print(duration)
+    heart_rate = (len(peaksR) / duration) * 60
+    print(heart_rate)
+
+    # Calculate HRV
+    rr_intervals = np.diff(peaksR) / samplerate
+    mean_rr = np.mean(rr_intervals)
+    sdnn = np.std(rr_intervals)
+
+    print(mean_rr)
+    print(sdnn)
+
+    # return heart_rate, mean_rr, sdnn
+
+    # FPT_S = len(value_S['S Peaks'])
+    FPT_R = len(value_R['R Peaks'])
+
+    if not mute:
+        print('Done')
+
+    return FPT_R
+
+
+##########
 
 def selecionar_arquivo():
     Tk().withdraw()
@@ -257,6 +417,7 @@ def selecionar_arquivo():
     )
     return arquivo_selecionado
 
+
 caminho_do_arquivo = selecionar_arquivo()
 
 if caminho_do_arquivo:
@@ -265,29 +426,26 @@ if caminho_do_arquivo:
     matriz_uma_coluna = [cell.value for cell in sheet['A']]
     signal = np.array(matriz_uma_coluna)
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(signal[1:450])
+    '''plt.plot(signal[1:2000])
     plt.title('Unfiltered ECG Signal Lead I')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
     # First, perform baseline removal
     filtered_signal, baseline = ecg_baseline_removal(signal, samplerate, window_length, overlap)
-    
+
     # Define the sequence of filters to be applied
-    
+
     filter_types = ['low', 'high', 'notch', 'band']
     # Then, pass the baseline-corrected signal through the bandpass filter
-    #final_filtered_signal = ecg_filter(filtered_signal, samplerate, 'band', lowpass_frequency, highpass_frequency, 'Butterworth')
-    final_filtered_signal = ecg_filter(filtered_signal, samplerate, filter_types, lowpass_frequency, highpass_frequency, notch_frequency, 'Butterworth')
-    final_filtered_signal2 = final_filtered_signal #+ 0.05
-
-    
+    # final_filtered_signal = ecg_filter(filtered_signal, samplerate, 'band', lowpass_frequency, highpass_frequency, 'Butterworth')
+    final_filtered_signal = ecg_filter(filtered_signal, samplerate, filter_types, lowpass_frequency, highpass_frequency,
+                                       notch_frequency, 'Butterworth')
+    final_filtered_signal2 = final_filtered_signal  # + 0.05
 
     # Plot the final filtered signal
-    '''plt.figure(figsize=(12, 6))
-    plt.plot(final_filtered_signal2[1:2000])
+    '''plt.plot(final_filtered_signal2[1:2000])
     plt.title('Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV') 
@@ -297,92 +455,29 @@ if caminho_do_arquivo:
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
 
     # Plot the isoline-corrected final_filtered_signal2
-    plt.figure(figsize=(12, 6))
-    plt.plot(corrected_final_filtered_signal2[1:450])
+    '''plt.plot(corrected_final_filtered_signal2[1:2000])
     plt.title('Isoline-Corrected Filtered ECG Signal')
     plt.xlabel('Time in ms')
     plt.ylabel('Voltage in mV')
-    plt.show()
+    plt.show()'''
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(signal[1:450], label='Original Signal', color='blue', alpha=0.5)
-    plt.plot(corrected_final_filtered_signal2[1:450], label='Filtered Signal', color='red', alpha=0.75)
+    '''plt.figure(figsize=(12, 6))
+    plt.plot(signal[1:2000], label='Original Signal', color='blue', alpha=0.5)
+    plt.plot(corrected_final_filtered_signal2[1:2000], label='Filtered Signal', color='red', alpha=0.75)
     #plt.axhline(y=offset, color='green', linestyle='--', label='Offset')
     plt.legend()
-    plt.title('Signal and Filtered Signal')
+    plt.title('Signal, Filtered Signal, and Offset')
     plt.xlabel('Sample')
     plt.ylabel('Amplitude')
-    plt.show()
+    plt.show()'''
+
+    # Perform QRS detection
+    FPT_R = QRS_Detection(signal, samplerate, peaksQRS=True, mute=True)
+
+    # print(f"Total number of S peaks: {FPT_S}")
+    print(f"Total number of R peaks: {FPT_R}")
 
 else:
     print("Nenhum arquivo foi selecionado.")
-
-
-
-
-
-
-# Generate for rats
-
-"""class MainWindow(Screen):
-
-    def Calcular_ECG(self): #COMO VAI CHAMAR UMA VARIAVEL DE OUTRA FUNCAO
-
-        # Generate simulated ECG data
-        fs = 140  # Distance RR
-        duration = 5  # Seconds
-        t, simulated_ecg = generate_simulated_ecg(self, fs, duration)
-
-        # simulated_ecg = nk.ecg_simulate(duration:=60, sampling_rate:=500, heart_rate:=70)
-
-        # Find R-peaks
-        peaks, _ = find_peaks(simulated_ecg, distance=100, height=0.5)
-
-        # Plot the ECG signal with detected R-peaks
-        plt.figure(figsize=(12, 4))
-        plt.plot(simulated_ecg)
-        plt.plot(peaks, simulated_ecg[peaks], "x", color='red', markersize=10)
-        plt.title('Simulated ECG Signal with R-peaks Detected')
-        plt.xlabel('Sample milisec')
-        plt.ylabel('Amplitude')
-        plt.grid(True)
-        plt.show()
-
-        # Print the indices of detected R-peaks
-        print("Indices of R-peaks:", peaks)
-
-
-        # Save ECG data and R-peak indices to an Excel file
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-
-        # Add headers
-        sheet["A1"] = "Time (s)"
-        sheet["B1"] = "ECG Signal"
-        sheet["C1"] = "R-peak Indices"
-
-        # Add ECG signal and time
-        for i, (time, ecg_value) in enumerate(zip(t, simulated_ecg), start=2):
-            sheet.cell(row=i, column=1, value=time)
-            sheet.cell(row=i, column=2, value=ecg_value)
-
-        # Add R-peak indices
-        for i, peak in enumerate(peaks, start=2):
-            sheet.cell(row=i, column=3, value=peak)
-
-        workbook.save("test_ECG_One.xlsx")
-        print("Excel file created :)")
-
-class WindowManager(ScreenManager): #Cria a janela
-    pass
-
-kv = Builder.load_file("ecgscreenalem.kv") #Seleciona o arquivo em kv e cria o app
-
-class ECG(App):  #Determina o nome do aplicativo
-    def build(self):
-        return kv
-
-if __name__ == "__main__":
-    ECG().run()"""
 
 
