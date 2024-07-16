@@ -8,7 +8,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import PchipInterpolator
-from scipy.signal import butter, sosfiltfilt
+from scipy.signal import butter, sosfiltfilt, decimate, welch
 import scipy.signal as signal
 from scipy.signal import decimate
 from scipy.io import loadmat
@@ -316,8 +316,9 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
         return None
 
     # Denoise ECG: Highpass and Lowpass filtering
-    highpass_frequency = 0.5
-    lowpass_frequency = 30
+    highpass_frequency = 0.25
+    lowpass_frequency = 80
+    #filtered_signal3 = signal
     filtered_signal3 = butter_highpass_filter(signal, samplerate, highpass_frequency)
     filtered_signal3 = butter_lowpass_filter(filtered_signal3, samplerate, lowpass_frequency)
 
@@ -330,47 +331,94 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
 
     # Perform wavelet transform using the 'haar' wavelet
     wavelet = 'haar'
+    waveletdb = 'db4'
 
     coeffs = pywt.wavedec(signal, wavelet, level=6)
     cA6, cD6, cD5, cD4, cD3, cD2, cD1 = coeffs  # cD3-start P // cD2-end S // cD1-peak S // cD4-start P
 
+
+    coeffsdb = pywt.wavedec(signal, waveletdb, level=6)
+    cA6d, cD6d, cD5d, cD4d, cD3d, cD2d, cD1d = coeffsdb
+
     # Reconstruct the signal from wavelet coefficients
-    reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)  # test
+    reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)
+    reconstructed_signaldb = pywt.upcoef('d', cD1d, waveletdb, level=1)
 
     # Absolute value to emphasize the peaks
     reconstructed_signal = np.abs(reconstructed_signal)
+    reconstructed_signaldb = np.abs(reconstructed_signaldb)
 
     # Find R peaks using distance
     # distance = int(samplerate * 0.6)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
     # print(distance) 300
 
     amplitude_mean = np.mean(reconstructed_signal)
-    amplitude_mean2 = amplitude_mean * 10000
+    amplitude_mean2 = amplitude_mean * 1000
 
     amplitude_std = np.std(reconstructed_signal)
-    amplitude_std2 = amplitude_std * 10000
+    amplitude_std2 = amplitude_std * 100
 
-    distance = int(
-        amplitude_mean2 + 1 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
+    distance = int(amplitude_mean2 + 4 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
+    print(distance)
 
     peaks, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
-    peaksR = peaks - 6
+    peaksR = peaks + 1
 
-    plt.figure(figsize=(12, 6))
 
-    plt.subplot(3, 1, 1)
-    plt.plot(signal[1:5000], label='Filtered ECG Signal', color='orange')
-    plt.plot(peaksR[:17], signal[peaksR[:17]], 'ro', label='R Peaks')  # bo  ro go
+
+########  DB4
+    amplitude_meandb = np.mean(reconstructed_signaldb)
+    amplitude_mean2db = amplitude_meandb * 1000
+
+    amplitude_stddb = np.std(reconstructed_signaldb)
+    amplitude_std2db = amplitude_stddb * 1000
+
+    distancedb = int(amplitude_mean2db + 4 * amplitude_std2db)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
+    print(distancedb)
+
+    peaksd, _ = find_peaks(reconstructed_signaldb, distance=distancedb, height=np.mean(reconstructed_signaldb))
+
+
+    plt.figure(figsize=(24, 12)) # bo  ro go
+
+    plt.subplot(8, 1, 1)
+    plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaks[:26], signal[peaks[:26]], 'bo', label='R Peaks')
     plt.legend()
 
-    plt.subplot(3, 1, 2)
-    plt.plot(reconstructed_signal[1:5000], label='Wavelet Haar', color='green')
-    plt.plot(peaks[:17], reconstructed_signal[peaks[:17]], 'bo', label='R Peaks')
+    plt.subplot(8, 1, 2)
+    plt.plot(reconstructed_signal[1:2000], label='Wavelet Haar', color='green')
+    plt.plot(peaks[:26], reconstructed_signal[peaks[:26]], 'bo', label='R Peaks')
     plt.legend()
 
-    plt.subplot(3, 1, 3)
-    plt.plot(signal, label='Approximation Coefficients', color='green')
-    plt.plot(peaksR, signal[peaksR], 'ro', label='R Peaks')
+    plt.subplot(8, 1, 3)
+    plt.plot(signal[1:500], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaks[:7], signal[peaks[:7]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(8, 1, 4)
+    plt.plot(reconstructed_signal[1:500], label='Wavelet Haar', color='green')
+    plt.plot(peaks[:7], reconstructed_signal[peaks[:7]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(8, 1, 5)
+    plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaksd[:26], signal[peaksd[:26]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(8, 1, 6)
+    plt.plot(reconstructed_signaldb[1:2000], label='Wavelet Haar', color='green')
+    plt.plot(peaksd[:26], reconstructed_signaldb[peaksd[:26]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(8, 1, 7)
+    plt.plot(signal[1:500], label='Filtered ECG Signal', color='orange')
+    plt.plot(peaksd[:7], signal[peaksd[:7]], 'bo', label='R Peaks')
+    plt.legend()
+
+    plt.subplot(8, 1, 8)
+    plt.plot(reconstructed_signaldb[1:500], label='Wavelet Haar', color='green')
+    plt.plot(peaksd[:7], reconstructed_signaldb[peaksd[:7]], 'bo', label='R Peaks')
     plt.legend()
 
     plt.tight_layout()
@@ -383,17 +431,17 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     # Calculate heart rate
     samplerate = samplerate * 2
     duration = len(signal) / samplerate
-    print(duration)
+    #print(duration)
     heart_rate = (len(peaksR) / duration) * 60
-    print(heart_rate)
+    #print(heart_rate)
 
     # Calculate HRV
     rr_intervals = np.diff(peaksR) / samplerate
     mean_rr = np.mean(rr_intervals)
     sdnn = np.std(rr_intervals)
 
-    print(mean_rr)
-    print(sdnn)
+    #print(mean_rr)
+    #print(sdnn)
 
     # return heart_rate, mean_rr, sdnn
 
@@ -453,6 +501,13 @@ if caminho_do_arquivo:
 
     # Apply isoline correction to final_filtered_signal2
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
+    f, Pxx_den = welch(signal, samplerate, nperseg=1024)
+
+    plt.figure(figsize=(12, 6))
+    plt.semilogy(f, Pxx_den, label='Spectral Density')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('PSD [V**2/Hz]')
+    plt.legend()
 
     # Plot the isoline-corrected final_filtered_signal2
     '''plt.plot(corrected_final_filtered_signal2[1:2000])
@@ -462,8 +517,8 @@ if caminho_do_arquivo:
     plt.show()'''
 
     '''plt.figure(figsize=(12, 6))
-    plt.plot(signal[1:2000], label='Original Signal', color='blue', alpha=0.5)
-    plt.plot(corrected_final_filtered_signal2[1:2000], label='Filtered Signal', color='red', alpha=0.75)
+    plt.plot(signal[1:1000], label='Original Signal', color='blue', alpha=0.5)
+    plt.plot(corrected_final_filtered_signal2[1:1000], label='Filtered Signal', color='red', alpha=0.75)
     #plt.axhline(y=offset, color='green', linestyle='--', label='Offset')
     plt.legend()
     plt.title('Signal, Filtered Signal, and Offset')
