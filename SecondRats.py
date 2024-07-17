@@ -296,7 +296,7 @@ def butter_lowpass_filter(signal, samplerate, lowpass_frequency):
     return filtered_signal3
 
 
-def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
+def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, mute=False):
     # Initialization
     flag_posR = peaksQRS
     if not mute:
@@ -317,7 +317,7 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
 
     # Denoise ECG: Highpass and Lowpass filtering
     highpass_frequency = 0.25
-    lowpass_frequency = 80
+    lowpass_frequency = 50  #80
     #filtered_signal3 = signal
     filtered_signal3 = butter_highpass_filter(signal, samplerate, highpass_frequency)
     filtered_signal3 = butter_lowpass_filter(filtered_signal3, samplerate, lowpass_frequency)
@@ -349,17 +349,16 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     reconstructed_signaldb = np.abs(reconstructed_signaldb)
 
     # Find R peaks using distance
-    # distance = int(samplerate * 0.6)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
-    # print(distance) 300
+    #distance = int(samplerate * 0.1)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
+   #print(distance) #300
 
     amplitude_mean = np.mean(reconstructed_signal)
     amplitude_mean2 = amplitude_mean * 1000
-
     amplitude_std = np.std(reconstructed_signal)
-    amplitude_std2 = amplitude_std * 100
+    amplitude_std2 = amplitude_std * 1000
 
     distance = int(amplitude_mean2 + 4 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-    print(distance)
+    #print(distance)
 
     peaks, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
     peaksR = peaks + 1
@@ -368,21 +367,21 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
 
 ########  DB4
     amplitude_meandb = np.mean(reconstructed_signaldb)
-    amplitude_mean2db = amplitude_meandb * 1000
-
+    amplitude_mean2db = amplitude_meandb * 10000
     amplitude_stddb = np.std(reconstructed_signaldb)
-    amplitude_std2db = amplitude_stddb * 1000
+    amplitude_std2db = amplitude_stddb * 10000
 
-    distancedb = int(amplitude_mean2db + 4 * amplitude_std2db)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-    print(distancedb)
+    distancedb = int(amplitude_mean2db + 4 * amplitude_std2db /2 )  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
+    #print(distancedb)
 
     peaksd, _ = find_peaks(reconstructed_signaldb, distance=distancedb, height=np.mean(reconstructed_signaldb))
+    peakR = peaksd - 8
 
 
     plt.figure(figsize=(24, 12)) # bo  ro go
 
     plt.subplot(8, 1, 1)
-    plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
+    plt.plot(signal[1:2000], label='Filtered ECG Signal Haar', color='orange')
     plt.plot(peaks[:26], signal[peaks[:26]], 'bo', label='R Peaks')
     plt.legend()
 
@@ -392,7 +391,7 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     plt.legend()
 
     plt.subplot(8, 1, 3)
-    plt.plot(signal[1:500], label='Filtered ECG Signal', color='orange')
+    plt.plot(signal[1:500], label='Filtered ECG Signal Haar', color='orange')
     plt.plot(peaks[:7], signal[peaks[:7]], 'bo', label='R Peaks')
     plt.legend()
 
@@ -402,22 +401,26 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
     plt.legend()
 
     plt.subplot(8, 1, 5)
-    plt.plot(signal[1:2000], label='Filtered ECG Signal', color='orange')
+    plt.plot(signal[1:2000], label='Filtered ECG Signal pd4', color='orange')
+    plt.plot(peakR[:26], signal[peakR[:26]], 'ro', label='R Peaks')
     plt.plot(peaksd[:26], signal[peaksd[:26]], 'bo', label='R Peaks')
     plt.legend()
 
     plt.subplot(8, 1, 6)
-    plt.plot(reconstructed_signaldb[1:2000], label='Wavelet Haar', color='green')
+    plt.plot(reconstructed_signaldb[1:2000], label='Wavelet pd4', color='green')
+    plt.plot(peakR[:26], reconstructed_signaldb[peakR[:26]], 'ro', label='R Peaks')
     plt.plot(peaksd[:26], reconstructed_signaldb[peaksd[:26]], 'bo', label='R Peaks')
     plt.legend()
 
     plt.subplot(8, 1, 7)
-    plt.plot(signal[1:500], label='Filtered ECG Signal', color='orange')
+    plt.plot(signal[1:500], label='Filtered ECG Signal pd4', color='orange')
+    plt.plot(peakR[:7], signal[peakR[:7]], 'ro', label='R Peaks')
     plt.plot(peaksd[:7], signal[peaksd[:7]], 'bo', label='R Peaks')
     plt.legend()
 
     plt.subplot(8, 1, 8)
-    plt.plot(reconstructed_signaldb[1:500], label='Wavelet Haar', color='green')
+    plt.plot(reconstructed_signaldb[1:500], label='Wavelet pd4', color='green')
+    plt.plot(peakR[:7], reconstructed_signaldb[peakR[:7]], 'ro', label='R Peaks')
     plt.plot(peaksd[:7], reconstructed_signaldb[peaksd[:7]], 'bo', label='R Peaks')
     plt.legend()
 
@@ -426,35 +429,48 @@ def QRS_Detection(signal, samplerate, peaksQRS=False, mute=False):
 
     # Placeholder for FPT and further processing
     # value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
-    value_R = {'R Peaks': peaksR}  # Todos os valores dos picos aqui
+    value_R = {'R Peaks': peakR}  # Todos os valores dos picos aqui
 
     # Calculate heart rate
     samplerate = samplerate * 2
-    duration = len(signal) / samplerate
-    #print(duration)
-    heart_rate = (len(peaksR) / duration) * 60
-    #print(heart_rate)
+    time = len(signal)
+    heart_rate = (len(peaksR) / time) * 60
+    print(heart_rate)
 
     # Calculate HRV
     rr_intervals = np.diff(peaksR) / samplerate
     mean_rr = np.mean(rr_intervals)
     sdnn = np.std(rr_intervals)
 
-    #print(mean_rr)
-    #print(sdnn)
+    print(mean_rr)
+    print(sdnn)
 
     # return heart_rate, mean_rr, sdnn
 
     # FPT_S = len(value_S['S Peaks'])
     FPT_R = len(value_R['R Peaks'])
 
+    FPT_R = value_R
+
     if not mute:
         print('Done')
 
     return FPT_R
 
-
 ##########
+#### CALCULATE HEART RATE AND HRV
+def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R):
+
+    time = len(corrected_final_filtered_signal2)
+    print("Mostrar aqui")
+    print(time)
+
+    time2 = FPT_R
+    print(time2)
+
+
+################
+
 
 def selecionar_arquivo():
     Tk().withdraw()
@@ -501,6 +517,8 @@ if caminho_do_arquivo:
 
     # Apply isoline correction to final_filtered_signal2
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
+
+    #SPECTRAL DENSITY
     f, Pxx_den = welch(signal, samplerate, nperseg=1024)
 
     plt.figure(figsize=(12, 6))
@@ -527,10 +545,12 @@ if caminho_do_arquivo:
     plt.show()'''
 
     # Perform QRS detection
-    FPT_R = QRS_Detection(signal, samplerate, peaksQRS=True, mute=True)
+    FPT_R = QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=True, mute=True)
 
     # print(f"Total number of S peaks: {FPT_S}")
     print(f"Total number of R peaks: {FPT_R}")
+
+    HR_HRV = CalculateHRHRV(corrected_final_filtered_signal2, FPT_R)
 
 else:
     print("Nenhum arquivo foi selecionado.")
