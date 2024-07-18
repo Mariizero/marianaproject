@@ -452,25 +452,32 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
     # return heart_rate, mean_rr, sdnn
 
     # FPT_S = len(value_S['S Peaks'])
-    FPT_R = len(value_R['R Peaks'])
+    FPT_R2 = len(value_R['R Peaks'])
+    print(FPT_R2)
 
     FPT_R = value_R
 
     if not mute:
         print('Done')
 
-    return FPT_R
+    return FPT_R, FPT_R2
 
 ##########
 #### CALCULATE HEART RATE AND HRV
-def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R):
+def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2):
 
     time = len(corrected_final_filtered_signal2)
-    print("Mostrar aqui")
-    print(time)
+    peaksFound = FPT_R2
 
-    time2 = FPT_R
-    print(time2)
+    bp = (peaksFound * 10000) / time
+    bpm = bp * 6
+
+    print("Mostrar aqui")
+    print(bp)
+    print(bpm)
+
+
+
 
 
 ################
@@ -549,12 +556,9 @@ if caminho_do_arquivo:
     plt.show()'''
 
     # Perform QRS detection
-    FPT_R = QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=True, mute=True)
+    FPT_R, FPT_R2 = QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=True, mute=True)
 
-    # print(f"Total number of S peaks: {FPT_S}")
-    print(f"Total number of R peaks: {FPT_R}")
-
-    HR_HRV = CalculateHRHRV(corrected_final_filtered_signal2, FPT_R)
+    HR_HRV = CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2)
 
 else:
     print("Nenhum arquivo foi selecionado.")
