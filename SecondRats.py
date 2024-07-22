@@ -380,19 +380,19 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
 
     plt.figure(figsize=(24, 12)) # bo  ro go
 
-    plt.subplot(8, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(signal[1:2000], label='Filtered ECG Signal Haar', color='orange')
-    plt.plot(peaks[:26], signal[peaks[:26]], 'bo', label='R Peaks')
-    plt.plot(peaksR[:26], signal[peaksR[:26]], 'ro', label='R Peaks')
+    plt.plot(peaks[:29], signal[peaks[:29]], 'bo', label='Wavelet Peaks')
+    plt.plot(peaksR[:29], signal[peaksR[:29]], 'ro', label='R Peaks')
     plt.legend()
 
-    plt.subplot(8, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(reconstructed_signal[1:2000], label='Wavelet Haar', color='green')
-    plt.plot(peaks[:26], reconstructed_signal[peaks[:26]], 'bo', label='R Peaks')
-    plt.plot(peaksR[:26], reconstructed_signal[peaksR[:26]], 'ro', label='R Peaks')
+    plt.plot(peaks[:29], reconstructed_signal[peaks[:29]], 'bo', label='Wavelet Peaks')
+    plt.plot(peaksR[:29], reconstructed_signal[peaksR[:29]], 'ro', label='R Peaks')
     plt.legend()
 
-    plt.subplot(8, 1, 3)
+    '''plt.subplot(8, 1, 3)
     plt.plot(signal[1:500], label='Filtered ECG Signal Haar', color='orange')
     plt.plot(peaks[:7], signal[peaks[:7]], 'bo', label='R Peaks')
     plt.plot(peaksR[:7], signal[peaksR[:7]], 'ro', label='R Peaks')
@@ -402,21 +402,21 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
     plt.plot(reconstructed_signal[1:500], label='Wavelet Haar', color='green')
     plt.plot(peaks[:7], reconstructed_signal[peaks[:7]], 'bo', label='R Peaks')
     plt.plot(peaksR[:7], reconstructed_signal[peaksR[:7]], 'ro', label='R Peaks')
-    plt.legend()
+    plt.legend()'''
 
-    plt.subplot(8, 1, 5)
+    plt.subplot(4, 1, 3)
     plt.plot(signal[1:2000], label='Filtered ECG Signal pd4', color='orange')
-    plt.plot(peakR[:26], signal[peakR[:26]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:26], signal[peaksd[:26]], 'bo', label='R Peaks')
+    plt.plot(peakR[:29], signal[peakR[:29]], 'ro', label='R Peaks')
+    plt.plot(peaksd[:29], signal[peaksd[:29]], 'bo', label='Wavelet Peaks')
     plt.legend()
 
-    plt.subplot(8, 1, 6)
+    plt.subplot(4, 1, 4)
     plt.plot(reconstructed_signaldb[1:2000], label='Wavelet pd4', color='green')
-    plt.plot(peakR[:26], reconstructed_signaldb[peakR[:26]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:26], reconstructed_signaldb[peaksd[:26]], 'bo', label='R Peaks')
+    plt.plot(peakR[:29], reconstructed_signaldb[peakR[:29]], 'ro', label='R Peaks')
+    plt.plot(peaksd[:29], reconstructed_signaldb[peaksd[:29]], 'bo', label='Wavelet Peaks')
     plt.legend()
 
-    plt.subplot(8, 1, 7)
+    '''plt.subplot(8, 1, 7)
     plt.plot(signal[1:500], label='Filtered ECG Signal pd4', color='orange')
     plt.plot(peakR[:7], signal[peakR[:7]], 'ro', label='R Peaks')
     plt.plot(peaksd[:7], signal[peaksd[:7]], 'bo', label='R Peaks')
@@ -426,7 +426,7 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
     plt.plot(reconstructed_signaldb[1:500], label='Wavelet pd4', color='green')
     plt.plot(peakR[:7], reconstructed_signaldb[peakR[:7]], 'ro', label='R Peaks')
     plt.plot(peaksd[:7], reconstructed_signaldb[peaksd[:7]], 'bo', label='R Peaks')
-    plt.legend()
+    plt.legend()'''
 
     plt.tight_layout()
     plt.show()
@@ -472,7 +472,6 @@ def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2):
     bp = (peaksFound * 10000) / time
     bpm = bp * 6
 
-    print("Mostrar aqui")
     print(bp)
     print(bpm)
 
