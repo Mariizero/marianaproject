@@ -317,8 +317,8 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
 
     # Denoise ECG: Highpass and Lowpass filtering
     highpass_frequency = 0.25
-    lowpass_frequency = 50  #80
-    #filtered_signal3 = signal
+    lowpass_frequency = 50  # 80
+    # filtered_signal3 = signal
     filtered_signal3 = butter_highpass_filter(signal, samplerate, highpass_frequency)
     filtered_signal3 = butter_lowpass_filter(filtered_signal3, samplerate, lowpass_frequency)
 
@@ -331,129 +331,124 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
 
     # Perform wavelet transform using the 'haar' wavelet
     wavelet = 'haar'
-    waveletdb = 'db4'
+    # waveletdb = 'db4'
 
     coeffs = pywt.wavedec(signal, wavelet, level=6)
     cA6, cD6, cD5, cD4, cD3, cD2, cD1 = coeffs  # cD3-start P // cD2-end S // cD1-peak S // cD4-start P
 
-
-    coeffsdb = pywt.wavedec(signal, waveletdb, level=6)
-    cA6d, cD6d, cD5d, cD4d, cD3d, cD2d, cD1d = coeffsdb
+    # coeffsdb = pywt.wavedec(signal, waveletdb, level=6)
+    # cA6d, cD6d, cD5d, cD4d, cD3d, cD2d, cD1d = coeffsdb
 
     # Reconstruct the signal from wavelet coefficients
     reconstructed_signal = pywt.upcoef('d', cD1, wavelet, level=1)
-    reconstructed_signaldb = pywt.upcoef('d', cD1d, waveletdb, level=1)
+    # reconstructed_signaldb = pywt.upcoef('d', cD1d, waveletdb, level=1)
 
     # Absolute value to emphasize the peaks
     reconstructed_signal = np.abs(reconstructed_signal)
-    reconstructed_signaldb = np.abs(reconstructed_signaldb)
+    # reconstructed_signaldb = np.abs(reconstructed_signaldb)
 
-    # Find R peaks using distance
-    #distance = int(samplerate * 0.1)  # Assuming heart rate is not more than 100 bpm (i.e., 60/100 * sampling_rate)
-   #print(distance) #300
+    distance2 = 1
+    # second_peaks, _ = find_peaks(reconstructed_signal, distance=distance2, height=np.mean(reconstructed_signal))
+    second_peaks, _ = find_peaks(reconstructed_signal, distance=distance2, height=np.mean(reconstructed_signal),
+                                 prominence=(0.02, None))
 
-    amplitude_mean = np.mean(reconstructed_signal)
-    amplitude_mean2 = amplitude_mean * 1000
-    amplitude_std = np.std(reconstructed_signal)
-    amplitude_std2 = amplitude_std * 1000
+    pairs7 = [(second_peaks[i], second_peaks[i + 1]) for i in range(len(second_peaks) - 1) if
+              abs(second_peaks[i] - second_peaks[i + 1]) <= 7]
 
-    distance = int(amplitude_mean2 + 4 * amplitude_std2)  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-    #print(distance)
+    # Faz a media entre eles e encontra o R
+    averages = [(x + y) // 2 for x, y in pairs7]
 
-    peaks, _ = find_peaks(reconstructed_signal, distance=distance, height=np.mean(reconstructed_signal))
-    peaksR = peaks + 2
+    # Inicializar a lista final de médias filtradas
+    filtered_averages = averages[:]
 
+    # Executar o loop exatamente 6 vezes
+    for iteration in range(6):
+        # Agrupar as médias em pares
+        grouped_averages = [(filtered_averages[i], filtered_averages[i + 1]) for i in
+                            range(0, len(filtered_averages) - 1, 2)]
+        print(f"Iteration {iteration + 1}: aqui2")
 
+        # Criar uma nova lista após aplicar as condições
+        new_filtered_averages = []
 
-########  DB4
-    amplitude_meandb = np.mean(reconstructed_signaldb)
-    amplitude_mean2db = amplitude_meandb * 10000
-    amplitude_stddb = np.std(reconstructed_signaldb)
-    amplitude_std2db = amplitude_stddb * 10000
+        for avg1, avg2 in grouped_averages:
+            difference = abs(avg1 - avg2)
+            if difference < 10:
+                new_filtered_averages.append(min(avg1, avg2))
+                print(f"Iteration {iteration + 1}: aqui")
+            elif difference > 50:
+                new_filtered_averages.extend([avg1, avg2])
+            else:
+                new_filtered_averages.extend([avg1, avg2])
 
-    distancedb = int(amplitude_mean2db + 4 * amplitude_std2db /2 )  # Adjust as needed for your data // int(amplitude_mean2 + 2 * amplitude_std2)
-    #print(distancedb)
+        # Atualizar a lista de médias filtradas para a próxima iteração
+        filtered_averages = new_filtered_averages
+        filtered_averages.insert(0, 0)
 
-    peaksd, _ = find_peaks(reconstructed_signaldb, distance=distancedb, height=np.mean(reconstructed_signaldb))
-    peakR = peaksd - 8
+        print(filtered_averages)
 
+    '''grouped_averages = [(averages[i], averages[i+1]) for i in range(0, len(averages) - 1, 2)]
 
-    plt.figure(figsize=(24, 12)) # bo  ro go
+    # Criar uma nova lista após aplicar as condições
+    filtered_averages = []
+
+    for avg1, avg2 in grouped_averages:
+        difference = abs(avg1 - avg2)
+        if difference < 10:
+            filtered_averages.append(min(avg1, avg2))
+        elif difference > 50:
+            filtered_averages.extend([avg1, avg2])
+        else:
+            filtered_averages.extend([avg1, avg2])
+
+    grouped_averages2 = [(filtered_averages[i], filtered_averages[i+1]) for i in range(0, len(filtered_averages) - 1, 2)]
+
+    # Criar uma nova lista após aplicar as condições de novo
+    filtered_averages2 = []
+
+    for avg1, avg2 in grouped_averages2:
+        difference2 = abs(avg1 - avg2)
+        if difference2 < 10:
+            filtered_averages2.append(min(avg1, avg2))
+        elif difference2 > 50:
+            filtered_averages2.extend([avg1, avg2])
+        else:
+            filtered_averages2.extend([avg1, avg2])
+
+    print(filtered_averages2)'''
+
+    plt.figure(figsize=(24, 12))  # bo  ro go
 
     plt.subplot(4, 1, 1)
     plt.plot(signal[1:2000], label='Filtered ECG Signal Haar', color='orange')
-    plt.plot(peaks[:29], signal[peaks[:29]], 'bo', label='Wavelet Peaks')
-    plt.plot(peaksR[:29], signal[peaksR[:29]], 'ro', label='R Peaks')
+    plt.plot(filtered_averages[:29], signal[filtered_averages[:29]], 'ro', label='R Peaks')
     plt.legend()
 
     plt.subplot(4, 1, 2)
     plt.plot(reconstructed_signal[1:2000], label='Wavelet Haar', color='green')
-    plt.plot(peaks[:29], reconstructed_signal[peaks[:29]], 'bo', label='Wavelet Peaks')
-    plt.plot(peaksR[:29], reconstructed_signal[peaksR[:29]], 'ro', label='R Peaks')
+    plt.plot(filtered_averages[:29], reconstructed_signal[filtered_averages[:29]], 'ro', label='R Peaks')
     plt.legend()
-
-    '''plt.subplot(8, 1, 3)
-    plt.plot(signal[1:500], label='Filtered ECG Signal Haar', color='orange')
-    plt.plot(peaks[:7], signal[peaks[:7]], 'bo', label='R Peaks')
-    plt.plot(peaksR[:7], signal[peaksR[:7]], 'ro', label='R Peaks')
-    plt.legend()
-
-    plt.subplot(8, 1, 4)
-    plt.plot(reconstructed_signal[1:500], label='Wavelet Haar', color='green')
-    plt.plot(peaks[:7], reconstructed_signal[peaks[:7]], 'bo', label='R Peaks')
-    plt.plot(peaksR[:7], reconstructed_signal[peaksR[:7]], 'ro', label='R Peaks')
-    plt.legend()'''
 
     plt.subplot(4, 1, 3)
-    plt.plot(signal[1:2000], label='Filtered ECG Signal pd4', color='orange')
-    plt.plot(peakR[:29], signal[peakR[:29]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:29], signal[peaksd[:29]], 'bo', label='Wavelet Peaks')
+    plt.plot(signal[1:2000], label='Filtered ECG Signal Haar', color='orange')
+    plt.plot(averages[:29], signal[averages[:29]], 'ro', label='R Peaks')
     plt.legend()
 
     plt.subplot(4, 1, 4)
-    plt.plot(reconstructed_signaldb[1:2000], label='Wavelet pd4', color='green')
-    plt.plot(peakR[:29], reconstructed_signaldb[peakR[:29]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:29], reconstructed_signaldb[peaksd[:29]], 'bo', label='Wavelet Peaks')
+    plt.plot(reconstructed_signal[1:2000], label='Wavelet Haar', color='green')
+    plt.plot(averages[:29], reconstructed_signal[averages[:29]], 'ro', label='R Peaks')
     plt.legend()
-
-    '''plt.subplot(8, 1, 7)
-    plt.plot(signal[1:500], label='Filtered ECG Signal pd4', color='orange')
-    plt.plot(peakR[:7], signal[peakR[:7]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:7], signal[peaksd[:7]], 'bo', label='R Peaks')
-    plt.legend()
-
-    plt.subplot(8, 1, 8)
-    plt.plot(reconstructed_signaldb[1:500], label='Wavelet pd4', color='green')
-    plt.plot(peakR[:7], reconstructed_signaldb[peakR[:7]], 'ro', label='R Peaks')
-    plt.plot(peaksd[:7], reconstructed_signaldb[peaksd[:7]], 'bo', label='R Peaks')
-    plt.legend()'''
 
     plt.tight_layout()
     plt.show()
 
     # Placeholder for FPT and further processing
     # value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
-    value_R = {'R Peaks': peakR}  # Todos os valores dos picos aqui
-
-    # Calculate heart rate
-    samplerate = samplerate * 2
-    time = len(signal)
-    heart_rate = (len(peaksR) / time) * 60
-    print(heart_rate)
-
-    # Calculate HRV
-    rr_intervals = np.diff(peaksR) / samplerate
-    mean_rr = np.mean(rr_intervals)
-    sdnn = np.std(rr_intervals)
-
-    print(mean_rr)
-    print(sdnn)
-
-    # return heart_rate, mean_rr, sdnn
+    value_R = {'R Peaks': filtered_averages}  # Todos os valores dos picos aqui
 
     # FPT_S = len(value_S['S Peaks'])
     FPT_R2 = len(value_R['R Peaks'])
-    print(FPT_R2)
+    # print(FPT_R2)
 
     FPT_R = value_R
 
@@ -462,21 +457,18 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
 
     return FPT_R, FPT_R2
 
+
 ##########
 #### CALCULATE HEART RATE AND HRV
 def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2):
-
     time = len(corrected_final_filtered_signal2)
     peaksFound = FPT_R2
 
     bp = (peaksFound * 10000) / time
     bpm = bp * 6
 
-    print(bp)
+    print("Valor da HR")
     print(bpm)
-
-
-
 
 
 ################
@@ -528,14 +520,14 @@ if caminho_do_arquivo:
     # Apply isoline correction to final_filtered_signal2
     corrected_final_filtered_signal2, offset = isoline_correction(final_filtered_signal2)
 
-    #SPECTRAL DENSITY
+    # SPECTRAL DENSITY
     f, Pxx_den = welch(signal, samplerate, nperseg=1024)
 
-    plt.figure(figsize=(12, 6))
+    '''plt.figure(figsize=(12, 6))
     plt.semilogy(f, Pxx_den, label='Spectral Density')
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('PSD [V**2/Hz]')
-    plt.legend()
+    plt.legend()'''
 
     # Plot the isoline-corrected final_filtered_signal2
     '''plt.plot(corrected_final_filtered_signal2[1:2000])
@@ -561,5 +553,3 @@ if caminho_do_arquivo:
 
 else:
     print("Nenhum arquivo foi selecionado.")
-
-
