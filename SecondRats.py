@@ -350,23 +350,38 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
     distance2 = 1
     # second_peaks, _ = find_peaks(reconstructed_signal, distance=distance2, height=np.mean(reconstructed_signal))
     second_peaks, _ = find_peaks(reconstructed_signal, distance=distance2, height=np.mean(reconstructed_signal),
-                                 prominence=(0.02, None))
+                                 prominence=(0.025, None))
 
-    pairs7 = [(second_peaks[i], second_peaks[i + 1]) for i in range(len(second_peaks) - 1) if
-              abs(second_peaks[i] - second_peaks[i + 1]) <= 7]
+    #print(second_peaks) VER 6 e 10
 
-    # Faz a media entre eles e encontra o R
-    averages = [(x + y) // 2 for x, y in pairs7]
+    # Lista para armazenar os números após aplicar as condições
+    processed_numbers = []
 
-    # Inicializar a lista final de médias filtradas
-    filtered_averages = averages[:]
+    # Passo 1: Processar os pares de números
+    for i in range(len(second_peaks) - 1):
+        diff = abs(second_peaks[i] - second_peaks[i + 1])
+        if diff <= 7:
+            # Quando a diferença é menor ou igual a 7, apenas adicione os números originais
+            processed_numbers.extend([second_peaks[i], second_peaks[i + 1]])
+        elif diff > 50:
+            # Quando a diferença é maior que 50, adicione o menor número duas vezes
+            #processed_numbers.extend([min(second_peaks[i], second_peaks[i + 1])] * 2)
+            min_value = min(second_peaks[i], second_peaks[i + 1])
+            processed_numbers.extend([min_value, min_value + 6])
+
+    # Lista final de médias filtradas
+    filtered_averages = []
+
+    # Passo 2: Calcular as médias dos pares processados
+    for i in range(0, len(processed_numbers) - 1, 2):
+        avg = (processed_numbers[i] + processed_numbers[i + 1]) // 2
+        filtered_averages.append(avg)
 
     # Executar o loop exatamente 6 vezes
     for iteration in range(6):
         # Agrupar as médias em pares
         grouped_averages = [(filtered_averages[i], filtered_averages[i + 1]) for i in
                             range(0, len(filtered_averages) - 1, 2)]
-        print(f"Iteration {iteration + 1}: aqui2")
 
         # Criar uma nova lista após aplicar as condições
         new_filtered_averages = []
@@ -375,7 +390,7 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
             difference = abs(avg1 - avg2)
             if difference < 10:
                 new_filtered_averages.append(min(avg1, avg2))
-                print(f"Iteration {iteration + 1}: aqui")
+
             elif difference > 50:
                 new_filtered_averages.extend([avg1, avg2])
             else:
@@ -385,37 +400,8 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
         filtered_averages = new_filtered_averages
         filtered_averages.insert(0, 0)
 
-        print(filtered_averages)
+        #print(filtered_averages)
 
-    '''grouped_averages = [(averages[i], averages[i+1]) for i in range(0, len(averages) - 1, 2)]
-
-    # Criar uma nova lista após aplicar as condições
-    filtered_averages = []
-
-    for avg1, avg2 in grouped_averages:
-        difference = abs(avg1 - avg2)
-        if difference < 10:
-            filtered_averages.append(min(avg1, avg2))
-        elif difference > 50:
-            filtered_averages.extend([avg1, avg2])
-        else:
-            filtered_averages.extend([avg1, avg2])
-
-    grouped_averages2 = [(filtered_averages[i], filtered_averages[i+1]) for i in range(0, len(filtered_averages) - 1, 2)]
-
-    # Criar uma nova lista após aplicar as condições de novo
-    filtered_averages2 = []
-
-    for avg1, avg2 in grouped_averages2:
-        difference2 = abs(avg1 - avg2)
-        if difference2 < 10:
-            filtered_averages2.append(min(avg1, avg2))
-        elif difference2 > 50:
-            filtered_averages2.extend([avg1, avg2])
-        else:
-            filtered_averages2.extend([avg1, avg2])
-
-    print(filtered_averages2)'''
 
     plt.figure(figsize=(24, 12))  # bo  ro go
 
@@ -431,12 +417,12 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
 
     plt.subplot(4, 1, 3)
     plt.plot(signal[1:2000], label='Filtered ECG Signal Haar', color='orange')
-    plt.plot(averages[:29], signal[averages[:29]], 'ro', label='R Peaks')
+    plt.plot(second_peaks[:29], signal[second_peaks[:29]], 'ro', label='R Peaks')
     plt.legend()
 
     plt.subplot(4, 1, 4)
     plt.plot(reconstructed_signal[1:2000], label='Wavelet Haar', color='green')
-    plt.plot(averages[:29], reconstructed_signal[averages[:29]], 'ro', label='R Peaks')
+    plt.plot(second_peaks[:29], reconstructed_signal[second_peaks[:29]], 'ro', label='R Peaks')
     plt.legend()
 
     plt.tight_layout()
@@ -469,6 +455,9 @@ def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2):
 
     print("Valor da HR")
     print(bpm)
+
+#gerar um vetor de dados que contenha os intervalos RR (tempo entre picos),
+#então você pode calcular a média, bem como o desvio padrão e outros parâmetros de VFC mais avançados.
 
 
 ################
