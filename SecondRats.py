@@ -429,46 +429,46 @@ def QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=False, 
     plt.show()
 
     # Placeholder for FPT and further processing
-    # value_S = {'S Peaks': peaks}  # Todos os valores dos picos aqui
     value_R = {'R Peaks': filtered_averages}  # Todos os valores dos picos aqui
-
-    # FPT_S = len(value_S['S Peaks'])
-    FPT_R2 = len(value_R['R Peaks'])
 
     FPT_R = value_R
 
     if not mute:
         print('Done')
 
-    return FPT_R, FPT_R2
+    return FPT_R
 
 
 ##########
 #### CALCULATE HEART RATE AND HRV
-def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2):
+def CalculateHRHRV(corrected_final_filtered_signal2, FPT_R):
     time = len(corrected_final_filtered_signal2)
-    peaksFound = FPT_R2
 
+
+    r_peaks = FPT_R.get('R Peaks', [])
+
+    # Passo 1: Remover todos os valores 0 do início da lista
+    while len(r_peaks) > 0 and r_peaks[0] == 0:
+        r_peaks = r_peaks[1:]
+
+    peaksFound = len(r_peaks)
     bp = (peaksFound * 10000) / time
-    bpm = bp * 6
+    HR = bp * 6
+    print("Valor da HR é", HR)
 
-    print("Valor da HR")
-    print(bpm)
+    # Passo 2: Calcular as diferenças entre os intervalos
+    HRV = []
 
-    intervals = FPT_R
+    for i in range(len(r_peaks) - 1):
+        diff = r_peaks[i + 1] - r_peaks[i]
+        HRV.append(diff)
 
-    # Remover o primeiro valor da lista  ESTOU AQUI ERRO
-    #intervals.pop(0)
-
-    # Calcular a diferença entre cada intervalo
-    HRV = [intervals[i + 1] - intervals[i] for i in range(len(intervals) - 1)]
-
+    # Exibir os resultados
+    #print("R Peaks modificados:", r_peaks)
     print("Diferenças entre os intervalos:", HRV)
 
-#gerar um vetor de dados que contenha os intervalos RR (tempo entre picos),
-#então você pode calcular a média, bem como o desvio padrão e outros parâmetros de VFC mais avançados.
 
-    return bpm, HRV
+    return HR, HRV
 ################
 
 
@@ -545,9 +545,11 @@ if caminho_do_arquivo:
     plt.show()'''
 
     # Perform QRS detection
-    FPT_R, FPT_R2 = QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=True, mute=True)
+    FPT_R = QRS_Detection(corrected_final_filtered_signal2, samplerate, peaksQRS=True, mute=True)
 
-    HR_HRV = CalculateHRHRV(corrected_final_filtered_signal2, FPT_R, FPT_R2)
+    HR, HRV = CalculateHRHRV(corrected_final_filtered_signal2, FPT_R)
+
+    # então você pode calcular a média, bem como o desvio padrão e outros parâmetros de VFC mais avançados.
 
 else:
     print("Nenhum arquivo foi selecionado.")
